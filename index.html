@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GACHA</title>
+<!-- コレクションサイト(多ガチャ版 2026-11-06)。URL: /g/<id>/  /g/<id>/u/<user>  /g/<id>/u/<user>/showcase  /u/<user>(全ガチャまとめ)  /help
+     文言・レア度・ギフト表・排出率はすべて /api/gachas と /api/config(gacha.json)・/api/items(items.json) から。WT 固有の処理は無い。旧版は index.html.bak_20261106_multi -->
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#07070c;--card:#111118;--line:#262633;--cyan:#00ffff;--mag:#ff00ff;--gold:#ffd700;--txt:#f2f2f6;--mut:#9a9ab0;
+    --c-C:#9fd8ff;--c-R:#00ffff;--c-SR:#ffd700;--c-UR:#ff4fd8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"M PLUS Rounded 1c",system-ui,sans-serif;line-height:1.5}
+  a{color:var(--cyan)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(7,7,12,.92);backdrop-filter:blur(8px);z-index:5;flex-wrap:wrap}
+  header h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.08em}
+  header h1 span{color:var(--cyan);text-shadow:0 0 10px var(--cyan)}
+  header nav{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:14px}
+  .gtabs{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+  .gtabs a{font-size:13px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:#0b0b12;color:#ddd;text-decoration:none;font-weight:700}
+  .gtabs a.on{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px #0ff6}
+  .btn{display:inline-block;padding:8px 14px;border-radius:10px;border:1px solid var(--cyan);background:#06181c;color:#fff;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}
+  .btn.mag{border-color:var(--mag);background:#1a061a}.btn.gold{border-color:var(--gold);background:#1a1606;color:#fff}
+  .btn.sm{padding:4px 10px;font-size:13px}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  input[type=text]{font:inherit;font-size:18px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#0b0b12;color:#fff;width:100%}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .mut{color:var(--mut);font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative;cursor:pointer;transition:transform .12s}
+  .v:hover{transform:translateY(-2px)}
+  .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
+  .v .n{font-size:13px;font-weight:700;line-height:1.2;min-height:2.4em}
+  .v .s{font-size:11px;color:var(--mut)}
+  .v.no{opacity:.28;filter:grayscale(1)}
+  .v .r{position:absolute;top:4px;left:6px;font-size:11px;font-weight:900;color:var(--rc)}
+  .v .c{position:absolute;top:4px;right:6px;font-size:11px;background:#000a;padding:0 6px;border-radius:8px}
+  .v.rb{border-image:linear-gradient(135deg,#ff4fd8,#ffd700,#00ffff,#ff4fd8) 1;box-shadow:0 0 14px #ff4fd8aa}
+  .v.fav::after{content:"★";position:absolute;bottom:4px;right:6px;color:var(--gold);font-size:18px;text-shadow:0 0 6px var(--gold)}
+  .bar{height:12px;background:#1b1b26;border-radius:6px;overflow:hidden;margin:4px 0 8px}
+  .bar i{display:block;height:100%;background:var(--rc);box-shadow:0 0 8px var(--rc)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .tabs button{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#0b0b12;color:#ddd;cursor:pointer}
+  .tabs button.on{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px #0ff6}
+  table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .modal{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+  .modal .box{max-width:560px;width:100%}
+  .big{font-size:40px;font-weight:900;color:var(--cyan);text-shadow:0 0 12px var(--cyan)}
+  .idbox{font-family:monospace;font-size:22px;background:#000;border:1px solid var(--gold);color:var(--gold);padding:8px 12px;border-radius:8px;word-break:break-all}
+  #stageWrap{display:flex;gap:16px;flex-wrap:wrap}
+  #stageWrap canvas{max-width:100%;width:360px;border:1px solid var(--line);border-radius:12px;background:#000}
+  h2{font-size:18px;margin:0 0 10px;color:var(--cyan)}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--rc);color:#000;font-weight:900;font-size:12px}
+  .pill.rb{background:linear-gradient(90deg,#ff4fd8,#ffd700,#00ffff)}
+  details summary{cursor:pointer;font-weight:700}
+  img.flag{height:.9em;width:auto;vertical-align:-0.08em;border-radius:2px;box-shadow:0 0 0 1px #0006;margin-right:.2em}
+  .gcard{display:block;background:#0b0b12;border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;color:inherit}
+  .gcard:hover{border-color:var(--cyan)}
+  .gcard h3{margin:0 0 6px;font-size:18px;color:var(--cyan)}
+  @media(max-width:600px){header h1{font-size:18px}.grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="h1"><span>GACHA</span></h1>
+  <nav>
+    <a href="/" data-nav>🏠 <span data-i18n="home">ホーム</span></a>
+    <a href="/help" data-nav>❓ <span data-i18n="help">自分のIDの調べ方</span></a>
+    <button class="btn sm" id="langBtn">EN</button>
+  </nav>
+  <div class="gtabs" id="gtabs"></div>
+</header>
+<main id="app"></main>
+<div id="modal"></div>
+
+<script>window.STATIC_SITE = true;</script>
+<script src="flags.js"></script>
+<script>
+/* ===================== i18n ===================== */
+const I = {
+  ja:{home:'ホーム',help:'自分のIDの調べ方',search_ph:'@ユーザー名 または 数字のユーザーID',search:'コレクションを見る',
+    recent:'最近の排出',leader:'コレクターランキング',unique:'ユニーク所持',pulls:'総排出',notfound:'まだ記録がありません。配信でギフトを送るとここに登録されます。',
+    first_title:'はじめての方へ',first_body:'このサイトは、配信でギフトを送って引いたガチャのコレクションを見るサイトです。<br>自分のページは <b>@ユーザー名</b> か <b>数字のユーザーID</b> で開けます。@名は変更できるので、長く使うなら数字IDをブックマークしてください。',
+    first_ok:'わかった',first_help:'数字IDの調べ方を見る',your_id:'あなたの数字ID（固定・変わりません）',bookmark:'このURLをブックマーク',
+    all:'すべて',owned_only:'所持のみ',showcase:'ショーケース（画像を作る）',fav_hint:'★をタップしてお気に入りに追加（最大9個・この端末に保存）',
+    make:'画像を生成',download:'PNGを保存',share:'共有',story:'ストーリー 9:16',square:'正方形 1:1',cap_ph:'ひとこと（任意）',
+    pity_sr:'確定まであと',tree:'ツリー',premium:'プレミアム',squadron:'隊列',event:'イベント/ギフト',
+    rates:'排出率',gifts:'ギフトと連数',ground:'陸',air:'空',heli:'ヘリ',naval:'海',last:'最終',first:'初回',dup:'×',
+    all_gachas:'全ガチャのコレクション',open:'開く',kinds:'種',no_items:'アイテムがまだ登録されていません',
+    help_html:`<h2>自分の数字のユーザーIDの調べ方</h2>
+<p><b>いちばん簡単：</b>このサイトの検索欄に <b>@ユーザー名</b> を入れて開くと、ページ上部に数字IDが表示されます（ギフトを1回でも送ったことがある場合）。そのURL <code>/u/数字ID</code> をブックマークすれば、@名を変えても同じページが開けます。</p>
+<p><b>自分で調べる方法：</b>TikTokアプリ内の設定画面には数字IDは表示されません（不確定情報）。パソコンのブラウザで自分のプロフィールページを開き、ページのソースから <code>"id":"数字"</code> を探す方法や、外部の「TikTok ID 検索」サービスで調べる方法があります。</p>
+<p>数字IDはアカウント作成時に決まり、@ユーザー名を変更しても変わりません。</p>`},
+  en:{home:'Home',help:'Find your ID',search_ph:'@username or numeric user ID',search:'Open collection',
+    recent:'Recent pulls',leader:'Top collectors',unique:'Unique owned',pulls:'Total pulls',notfound:'No record yet. Send a gift on stream and you will appear here.',
+    first_title:'Welcome',first_body:'This site shows your gacha collection, pulled by sending gifts on stream.<br>Open your page with your <b>@username</b> or your <b>numeric user ID</b>. Usernames can change, so bookmark the numeric-ID URL.',
+    first_ok:'Got it',first_help:'How to find my numeric ID',your_id:'Your numeric ID (permanent)',bookmark:'Bookmark this URL',
+    all:'All',owned_only:'Owned only',showcase:'Showcase (make an image)',fav_hint:'Tap ★ to favorite (max 9, saved on this device)',
+    make:'Generate',download:'Save PNG',share:'Share',story:'Story 9:16',square:'Square 1:1',cap_ph:'Caption (optional)',
+    pity_sr:'guaranteed in',tree:'Tech tree',premium:'Premium',squadron:'Squadron',event:'Event/Gift',
+    rates:'Drop rates',gifts:'Gifts & rolls',ground:'Ground',air:'Air',heli:'Heli',naval:'Naval',last:'last',first:'first',dup:'×',
+    all_gachas:'Collections in all gachas',open:'Open',kinds:'items',no_items:'No items registered yet',
+    help_html:`<h2>How to find your numeric TikTok user ID</h2>
+<p><b>Easiest:</b> type your <b>@username</b> in the search box here. If you have ever sent a gift, your numeric ID is shown at the top of your page. Bookmark <code>/u/&lt;numeric ID&gt;</code> — it keeps working even if you rename your @username.</p>
+<p><b>On your own:</b> the TikTok app settings do not show the numeric ID (unverified). On a desktop browser, open your profile page and search the page source for <code>"id":"…digits…"</code>, or use a third-party "TikTok ID lookup" service.</p>
+<p>The numeric ID is assigned when the account is created and never changes.</p>`}
+};
+let LANG = localStorage.getItem('wtg_lang') || (navigator.language.startsWith('ja')?'ja':'en');
+const t = k => (I[LANG]||I.ja)[k] ?? k;
+const GROUP_N = {usa:['アメリカ','USA'],germany:['ドイツ','Germany'],ussr:['ソ連','USSR'],britain:['イギリス','Britain'],japan:['日本','Japan'],china:['中国','China'],italy:['イタリア','Italy'],france:['フランス','France'],sweden:['スウェーデン','Sweden'],israel:['イスラエル','Israel']};
+const gn = c => (GROUP_N[c]||[c,c])[LANG==='ja'?0:1];
+const catN = c => ({ground:t('ground'),air:t('air'),heli:t('heli'),naval:t('naval')}[c]||c);
+const vname = v => (LANG==='ja' || !v.name_en) ? (v.name || v.name_ja || v.id) : v.name_en;
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const flagOf = v => { try{ return flagImg(typeof v==='string'?{country:v}:{country:v.group||'', operator:(v.meta||{}).operator||''}); }catch(e){ return ''; } };
+
+/* ===================== data(ガチャ別) ===================== */
+let GACHAS = [], GID = '', CFG = {}, RAR = [], RB = {}, LEG = [], ITEMS = null, VBY = {};
+const RC = r => (RB[r]?.color==='rainbow') ? '#ff4fd8' : (RB[r]?.color || getComputedStyle(document.documentElement).getPropertyValue('--c-'+r).trim() || '#fff');
+const isRB = r => RB[r]?.color==='rainbow';
+const rlab = r => RB[r] ? (LANG==='ja' ? (RB[r].label||r) : (RB[r].label_en||RB[r].label||r)) : r;
+const STATIC = !!(window.STATIC_SITE || location.protocol==='file:'); // 2026-11-08 静的モード: GitHub Pages などデーモンの無い所では site_export の JSON を読む
+const IMG = id => (window.DEMO || STATIC) ? (VBY[id]?.img || '') : `/img/${encodeURIComponent(GID)}/${encodeURIComponent(id)}.png`;
+const gq = (sep='?') => sep + 'gacha=' + encodeURIComponent(GID);
+if (window.DEMO){ // デモ: /api/* を同梱データで応答(静的公開の下準備)
+  const _f = window.fetch.bind(window);
+  window.fetch = (u,o)=>{ const url=String(u); const j=x=>Promise.resolve(new Response(JSON.stringify(x),{headers:{'Content-Type':'application/json'}}));
+    if (url.startsWith('/api/gachas')) return j({ok:true, active:DEMO.config.gacha, gachas:[DEMO.config]});
+    if (url.startsWith('/api/items') || url.startsWith('/api/vehicles')) return j({items:DEMO.items||DEMO.vehicles});
+    if (url.startsWith('/api/config')) return j(DEMO.config);
+    if (url.startsWith('/api/recent')) return j({ok:true,recent:DEMO.recent});
+    if (url.startsWith('/api/leaderboard')) return j({ok:true,leaderboard:DEMO.leaderboard});
+    if (url.startsWith('/api/user')) { const q=decodeURIComponent((url.match(/[?&]q=([^&]*)/)||[])[1]||'').toLowerCase(); const hit=DEMO.users.find(x=>x.user.user_id===q||('@'+(x.user.handle||'').toLowerCase())===q||(x.user.handle||'').toLowerCase()===q); return hit?j(Object.assign({ok:true},hit)):j({ok:false}); }
+    return _f(u,o); };
+}
+if (STATIC && !window.DEMO){ // 静的モード: /api/* を site_export/ の JSON で応答(書き出しは gacha_daemon → site_export.py、5 分ごと)
+  const _f = window.fetch.bind(window), _c = {};
+  const J = path => (_c[path] ||= _f(path, {cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null));
+  const j = x => Promise.resolve(new Response(JSON.stringify(x),{headers:{'Content-Type':'application/json'}}));
+  const qp = (url,k) => { const m=url.match(new RegExp('[?&]'+k+'=([^&]*)')); try{ return m?decodeURIComponent(m[1]):''; }catch(e){ return m?m[1]:''; } };
+  async function idxRows(h){ const ix = await J('users_index.json'); if (!ix) return [];
+    if (!ix.shards) return ix.users||[];
+    const ch = /^[a-z0-9]/.test(h) ? h[0] : '_'; const f = ix.shards[ch]; if (!f) return []; const sh = await J(f); return (sh&&sh.users)||[]; }
+  async function findUser(q){ // q: 数字 ID / @名 / 名前。見つからなければ前方一致の候補
+    q = (q||'').trim(); const h = q.replace(/^@/,'').toLowerCase();
+    if (/^[0-9]{1,30}$/.test(q)){ const d = await J('users/'+q+'.json'); if (d) return {d}; }
+    const rows = await idxRows(h);
+    const hit = rows.find(r=>r[0]===h) || rows.find(r=>r[1]===q) || rows.find(r=>r[2]===q);
+    if (hit){ const d = await J('users/'+encodeURIComponent(hit[1])+'.json'); if (d) return {d}; }
+    return {cand: h ? rows.filter(r=>r[0].startsWith(h)).slice(0,10).map(r=>({user_id:r[2], handle:r[3], last_seen:r[4]})) : []}; }
+  window.fetch = async (u,o)=>{ const url=String(u);
+    if (!url.startsWith('/api/')) return _f(u,o);
+    const gid = qp(url,'gacha'); const G = await J('gachas.json') || {gachas:[],configs:{}};
+    const gg = gid && gid!=='all' ? gid : G.active;
+    if (url.startsWith('/api/gachas')) return j({ok:true, active:G.active, gachas:G.gachas});
+    if (url.startsWith('/api/config')) { const c=(G.configs||{})[gg]; return c ? j(c) : j({ok:false}); }
+    if (url.startsWith('/api/items') || url.startsWith('/api/vehicles')) return j(await J('items/'+encodeURIComponent(gg)+'.json') || {items:[]});
+    if (url.startsWith('/api/recent')) { const R = await J('recent.json'); let rec = ((R||{}).gachas||{})[gg] || [];
+      const mn = qp(url,'min'); const rar = (((G.configs||{})[gg]||{}).rarities||[]).map(r=>r.key);
+      if (mn && rar.includes(mn)) rec = rec.filter(r=>rar.indexOf(r.rarity)>=rar.indexOf(mn));
+      return j({ok:true, gacha:gg, recent:rec}); }
+    if (url.startsWith('/api/leaderboard')) { const L = await J('leaderboard.json'); const b = ((L||{}).gachas||{})[gg] || {leaderboard:[]}; return j(Object.assign({ok:true, gacha:gg}, b)); }
+    if (url.startsWith('/api/user')) { const q = qp(url,'q'); const f = await findUser(q);
+      if (!f.d) return j({ok:false, error:'not_found', q, candidates:f.cand||[]});
+      const d = f.d, us = Object.assign({display_name:''}, d.user);
+      if (gid==='all'){ const out = Object.entries(d.gachas||{}).map(([k,v])=>{ const c=(G.configs||{})[k]||{}; return {gacha:k, name:c.name||k, user:us, stats:v.stats, rarities:c.rarities||[]}; });
+        return out.length ? j({ok:true, q, gachas:out}) : j({ok:false, error:'not_found', q}); }
+      const v = (d.gachas||{})[gg]; if (!v) return j({ok:false, error:'not_found', q, candidates:[]});
+      return j({ok:true, gacha:gg, user:Object.assign({}, us, {since_sr:v.since_sr, since_ssr:v.since_ssr}), owned:v.owned, recent:v.recent, stats:v.stats}); }
+    if (url.startsWith('/api/resolve')) { const f = await findUser(qp(url,'q')); return j({ok:true, candidates: f.d ? [f.d.user] : (f.cand||[])}); }
+    return j({ok:false, error:'static'}); };
+}
+async function loadGachas(){ if (GACHAS.length) return; const d = await (await fetch('/api/gachas')).json(); GACHAS = d.gachas||[]; GACHAS._active = d.active; }
+async function useGacha(id){
+  await loadGachas();
+  const want = id || GACHAS._active || (GACHAS[0]||{}).id || '';
+  if (want === GID && CFG.gacha) return true;
+  if (!GACHAS.some(g=>g.id===want)) return false;
+  const cfg = await (await fetch('/api/config?gacha='+encodeURIComponent(want))).json();
+  if (!cfg || cfg.ok===false || !cfg.rarities) return false;
+  GID = want; ITEMS = null; VBY = {}; CFG = cfg;
+  RAR = (CFG.rarities||[]).map(r=>r.key); RB = Object.fromEntries((CFG.rarities||[]).map(r=>[r.key,r])); LEG = CFG.legendary||[];
+  for (const r of CFG.rarities||[]) document.documentElement.style.setProperty('--c-'+r.key, RC(r.key));
+  document.title = CFG.name || 'GACHA';
+  document.getElementById('h1').innerHTML = `<span>${esc(LANG==='ja'?CFG.name:(CFG.name_en||CFG.name))}</span>`;
+  renderGTabs();
+  return true;
+}
+function renderGTabs(){
+  const el = document.getElementById('gtabs');
+  el.innerHTML = GACHAS.length>1 ? GACHAS.map(g=>`<a href="/g/${encodeURIComponent(g.id)}/" data-nav class="${g.id===GID?'on':''}">${esc(LANG==='ja'?g.name:(g.name_en||g.name))}</a>`).join('') : '';
+}
+async function loadItems(){ if (ITEMS) return; const d = await (await fetch('/api/items'+gq())).json(); const all = d.items||d.vehicles||d;
+  const pc = CFG.pool||{}, cats=new Set(pc.categories||[]), grs=new Set(pc.groups||pc.countries||[]), ex=new Set(pc.exclude_ids||[]), mr=pc.min_rank||0;
+  all.forEach(v=>VBY[v.id]=v);
+  ITEMS = all.filter(v=>RAR.includes(v.rarity)&&(!cats.size||cats.has(v.category))&&(!grs.size||grs.has(v.group))&&!ex.has(v.id)&&(!mr||((v.meta||{}).rank||0)>=mr)); }
+const fmtTs = ts => new Date(ts*1000).toLocaleString(LANG==='ja'?'ja-JP':'en-US',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+const fmtPct = p => p>=1 ? p.toFixed(p>=10?0:1)+'%' : p>=0.1 ? p.toFixed(2)+'%' : p.toFixed(3)+'%';
+const oneIn = p => p>0 ? '1/'+Math.round(100/p).toLocaleString() : '—';
+const upath = (u, more='') => `/g/${encodeURIComponent(GID)}/u/${encodeURIComponent(u)}${more}`;
+
+/* ===================== router ===================== */
+const HASHMODE = !!window.DEMO || STATIC;
+function go(path){ if (HASHMODE) { location.hash = '#'+path; } else { history.pushState({},'',path); route(); } }
+window.addEventListener('hashchange', ()=>{ if (HASHMODE) route(); });
+document.addEventListener('click', e=>{ const a=e.target.closest('a[data-nav]'); if(a){ e.preventDefault(); go(a.getAttribute('href')); } });
+window.addEventListener('popstate', route);
+document.getElementById('langBtn').onclick = ()=>{ LANG = LANG==='ja'?'en':'ja'; localStorage.setItem('wtg_lang',LANG); CFG.gacha=''; route(); };
+async function route(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.getElementById('langBtn').textContent = LANG==='ja'?'EN':'日本語';
+  let p = HASHMODE ? (location.hash.slice(1)||'/') : location.pathname;
+  try{ p = decodeURIComponent(p); }catch(e){}
+  const app = document.getElementById('app');
+  if (p === '/help') { await useGacha(''); return app.innerHTML = `<div class="box">${t('help_html')}</div>`; }
+  let m = p.match(/^\/g\/([^/]+)\/?(?:u\/([^/]+)(\/showcase)?)?$/);
+  if (m){ if (!(await useGacha(m[1]))) return app.innerHTML = `<div class="box">unknown gacha: ${esc(m[1])}</div>`;
+    if (!m[2]) return home(); return m[3] ? showcase(m[2]) : collection(m[2]); }
+  m = p.match(/^\/u\/([^/]+)(\/showcase)?$/);
+  if (m){ await useGacha(''); if (GACHAS.length<=1) return m[2] ? showcase(m[1]) : collection(m[1]); return allGachas(m[1]); }
+  await useGacha(''); return home();
+}
+
+/* ===================== home ===================== */
+function giftTable(){
+  const gr = CFG.gift_rolls||{}, gc = CFG.gift_coins||{}; const groups = new Map();
+  for (const [name, spec] of Object.entries(gr)){ const rolls = typeof spec==='object'?spec.rolls:spec, guar = typeof spec==='object'?spec.guarantee:null; const key=JSON.stringify([rolls,guar||null]);
+    if (!groups.has(key)) groups.set(key,{names:[],rolls,guar,coins:null}); const g=groups.get(key); g.names.push(name); if (gc[name]!=null) g.coins=gc[name]; }
+  const rows=[...groups.values()].sort((a,b)=>a.rolls-b.rolls); const hasCoins=rows.some(r=>r.coins!=null);
+  const nm = g => { const jp=g.names.filter(n=>/[^\x00-\x7F]/.test(n)), e=g.names.filter(n=>!/[^\x00-\x7F]/.test(n)); return esc((LANG==='ja'&&jp.length)?jp[0]:(e[0]||jp[0])) + (e[0]&&jp.length?` <span class="mut">${esc(LANG==='ja'?e[0]:jp[0])}</span>`:''); };
+  return `<table><tr><th>${LANG==='ja'?'ギフト':'Gift'}</th>${hasCoins?`<th>${LANG==='ja'?'コイン':'Coins'}</th>`:''}<th>${LANG==='ja'?'連数':'Rolls'}</th><th>${LANG==='ja'?'確定枠':'Guaranteed'}</th></tr>`+
+    rows.map(g=>`<tr><td>${nm(g)}</td>${hasCoins?`<td>${g.coins!=null?Number(g.coins).toLocaleString():''}</td>`:''}<td><b>${Number(g.rolls).toLocaleString()}</b></td><td>${g.guar?Object.entries(g.guar).map(([r,n])=>`<span class="pill ${isRB(r)?'rb':''}" style="--rc:${RC(r)}">${esc(r)}</span>×${n}`).join(' '):''}</td></tr>`).join('')+
+    `</table>` + (CFG.coins_per_roll?`<div class="mut" style="margin-top:6px">${LANG==='ja'?`表に無いギフトは ${CFG.coins_per_roll} コイン = 1 連`:`Other gifts: ${CFG.coins_per_roll} coins = 1 roll`}</div>`:'');
+}
+async function home(){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="box">
+    <div class="mut">${esc(LANG==='ja'?CFG.subtitle:(CFG.subtitle_en||CFG.subtitle))}</div>
+    <div class="row" style="margin-top:8px"><input type="text" id="q" placeholder="${t('search_ph')}" style="flex:1;min-width:240px"><button class="btn" id="goBtn">${t('search')}</button></div>
+    <div class="mut" style="margin-top:8px"><a href="/help" data-nav>${t('help')}</a></div></div>
+    <div class="box"><h2>${t('recent')}</h2><div id="recent" class="grid"></div></div>
+    <div class="box"><h2>${t('leader')}</h2><table id="lb"></table></div>
+    <div class="box"><h2>${t('rates')}</h2><div id="rates"></div></div>
+    <div class="box"><h2>${t('gifts')}</h2><div id="gifts"></div></div>`;
+  const goq = ()=>{ const q=document.getElementById('q').value.trim(); if(q) go(upath(q)); };
+  document.getElementById('goBtn').onclick = goq; document.getElementById('q').onkeydown = e=>{ if(e.key==='Enter') goq(); };
+  if (!localStorage.getItem('wtg_seen_intro')) firstVisit();
+  await loadItems();
+  const rec = (await (await fetch('/api/recent'+gq())).json()).recent || [];
+  document.getElementById('recent').innerHTML = rec.slice(0,18).map(r=>{ const v=VBY[r.vehicle_id]; if(!v) return ''; return vcard(v,{owned:true,count:null,who:r.display_name||r.handle||r.user_id,link:upath(r.user_id||('@'+r.handle))}); }).join('') || `<div class="mut">—</div>`;
+  const lbr = await (await fetch('/api/leaderboard'+gq())).json(); const lb = lbr.leaderboard || [];
+  const lk = (lbr.legendary||LEG).join('/')||RAR[RAR.length-1], hk = (lbr.high||[]).filter(k=>!(lbr.legendary||LEG).includes(k)).join('/')||RAR[RAR.length-2]||'';
+  document.getElementById('lb').innerHTML = `<tr><th>#</th><th></th><th>${t('unique')}</th><th>${esc(lk)}</th><th>${esc(hk)}</th><th>${t('pulls')}</th></tr>` + lb.map((u,i)=>`<tr><td>${i+1}</td><td><a href="${upath(u.user_id||('@'+u.handle))}" data-nav>${esc(u.display_name||u.handle||u.user_id)}</a> <span class="mut">@${esc(u.handle||'')}</span></td><td>${u.uniq}</td><td>${u.ur}</td><td>${u.sr}</td><td>${u.pulls}</td></tr>`).join('');
+  const w = CFG.rarity_weights||{}, tot = Object.values(w).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('rates').innerHTML = [...RAR].reverse().map(r=>{ const p=(w[r]||0)/tot*100; return `<div><span class="pill ${isRB(r)?'rb':''}" style="--rc:${RC(r)}">${esc(r)}</span> ${esc(rlab(r))} ${fmtPct(p)} <span class="mut">(${oneIn(p)}) ・ ${CFG.pool_by_rarity?.[r]??'?'} ${t('kinds')}</span></div>`; }).join('');
+  document.getElementById('gifts').innerHTML = giftTable();
+}
+function firstVisit(){
+  const m = document.getElementById('modal');
+  m.innerHTML = `<div class="modal"><div class="box"><h2>${t('first_title')}</h2><p>${t('first_body')}</p>
+    <div class="row"><button class="btn" id="okb">${t('first_ok')}</button><a class="btn mag" href="/help" data-nav id="hb">${t('first_help')}</a></div></div></div>`;
+  const close = ()=>{ localStorage.setItem('wtg_seen_intro','1'); m.innerHTML=''; };
+  document.getElementById('okb').onclick = close; document.getElementById('hb').addEventListener('click', close);
+}
+
+const candHtml = d => (d && d.candidates && d.candidates.length) ? `<div class="mut">${LANG==='ja'?'もしかして':'Did you mean'}:</div><div class="row" style="gap:8px;margin:6px 0 12px">${d.candidates.map(c=>`<a class="btn" href="${upath(c.user_id||('@'+c.handle))}" data-nav>@${esc(c.handle||c.user_id)}</a>`).join('')}</div>` : '';
+/* ===================== 全ガチャまとめ(/u/<user>) ===================== */
+async function allGachas(q){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="box mut">loading…</div>`;
+  const d = await (await fetch('/api/user?q='+encodeURIComponent(q)+'&gacha=all')).json();
+  if (!d.ok){ app.innerHTML = `<div class="box"><div class="big" style="font-size:22px">${esc(q)}</div><p>${t('notfound')}</p>${candHtml(d)}<a class="btn" href="/" data-nav>${t('home')}</a></div>`; return; }
+  const u0 = d.gachas[0].user;
+  app.innerHTML = `<div class="box"><div class="big">${esc(u0.display_name||u0.handle||u0.user_id)}</div><div class="mut">@${esc(u0.handle||'')}</div>
+    ${u0.user_id?`<div style="margin-top:10px"><div class="mut">${t('your_id')}</div><div class="idbox">${esc(u0.user_id)}</div></div>`:''}</div>
+    <div class="box"><h2>${t('all_gachas')}</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${d.gachas.map(g=>{
+      const rs=(g.rarities||[]); const st=g.stats; const uid=g.user.user_id||('@'+g.user.handle);
+      return `<a class="gcard" href="/g/${encodeURIComponent(g.gacha)}/u/${encodeURIComponent(uid)}" data-nav><h3>${esc(g.name)}</h3>
+        <div>${t('unique')} <b>${st.unique}</b> <span class="mut">/ ${st.pool_total}</span> ・ ${t('pulls')} <b>${st.pulls}</b></div>
+        <div class="row" style="margin-top:6px;gap:6px">${[...rs].reverse().map(r=>`<span class="pill ${r.color==='rainbow'?'rb':''}" style="--rc:${r.color==='rainbow'?'#ff4fd8':r.color}">${esc(r.key)} ${st.by_rarity[r.key]||0}</span>`).join('')}</div>
+        <div class="mut" style="margin-top:6px">${t('open')} →</div></a>`; }).join('')}</div></div>`;
+}
+
+/* ===================== collection ===================== */
+function vcard(v, o={}){
+  const owned = !!o.owned; const m=v.meta||{};
+  const sub = o.who ? esc(o.who) : [gn(v.group), v.category?catN(v.category):'', m.rank?'R'+m.rank:'', m.br?'BR'+m.br:''].filter(Boolean).join(' ');
+  return `<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
+    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}
+    <img loading="lazy" src="${IMG(v.id)}" onerror="this.style.visibility='hidden'">
+    <div class="n">${flagOf(v)}${esc(vname(v))}</div>
+    <div class="s">${sub}</div></div>`;
+}
+const favKey = uid => 'wtg_fav_'+GID+'_'+uid;
+const getFav = uid => { try{ return JSON.parse(localStorage.getItem(favKey(uid))||'[]'); }catch(e){ return []; } };
+const setFav = (uid,arr) => localStorage.setItem(favKey(uid), JSON.stringify(arr));
+
+async function collection(q){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="box mut">loading…</div>`;
+  await loadItems();
+  const r = await fetch('/api/user?q='+encodeURIComponent(q)+gq('&')); const d = await r.json();
+  if (!d.ok){ app.innerHTML = `<div class="box"><div class="big" style="font-size:22px">${esc(q)}</div><p>${t('notfound')}</p>${candHtml(d)}<a class="btn" href="/" data-nav>${t('home')}</a></div>`; return; }
+  const u = d.user, uid = u.user_id || ('@'+u.handle), st = d.stats, owned = d.owned;
+  let fav = getFav(uid).filter(id=>owned[id]);
+  const state = {group:'', cat:'', rar:'', ownedOnly:true};
+  const byG = {}; ITEMS.forEach(v=>{ const g=v.group||''; byG[g]=byG[g]||{t:0,o:0}; byG[g].t++; if(owned[v.id]) byG[g].o++; });
+  const groups = Object.keys(byG).filter(Boolean).sort((a,b)=>byG[b].t-byG[a].t);
+  app.innerHTML = `
+    <div class="box">
+      <div class="row" style="align-items:flex-end">
+        <div><div class="big">${esc(u.display_name||u.handle||u.user_id)}</div><div class="mut">@${esc(u.handle||'')} ・ ${t('first')} ${fmtTs(u.first_seen)} ・ ${t('last')} ${fmtTs(u.last_seen)}</div></div>
+        <div style="margin-left:auto"><a class="btn gold" href="${upath(uid,'/showcase')}" data-nav>📸 ${t('showcase')}</a></div>
+      </div>
+      ${u.user_id?`<div style="margin-top:10px"><div class="mut">${t('your_id')}</div><div class="idbox">${esc(u.user_id)}</div><div class="mut">${t('bookmark')}: <code>${HASHMODE?location.origin+location.pathname+'#':location.origin}${upath(u.user_id)}</code>${GACHAS.length>1?` ・ <a href="/u/${encodeURIComponent(u.user_id)}" data-nav>${t('all_gachas')}</a>`:''}</div></div>`:''}
+      <div class="row" style="margin-top:12px;gap:24px">
+        <div><div class="mut">${t('unique')}</div><div class="big" style="font-size:30px">${st.unique} <span class="mut" style="font-size:14px">/ ${st.pool_total}</span></div></div>
+        <div><div class="mut">${t('pulls')}</div><div class="big" style="font-size:30px;color:var(--mag);text-shadow:0 0 10px var(--mag)">${st.pulls}</div></div>
+        ${CFG.pity?.sr_within?`<div class="mut">${t('pity_sr')} <b>${Math.max(0,(CFG.pity?.sr_within||0)-u.since_sr)}</b></div>`:''}
+      </div>
+      <div style="margin-top:10px">${[...RAR].reverse().map(r=>`<div style="--rc:${RC(r)}"><span class="pill ${isRB(r)?'rb':''}">${esc(r)}</span> <span class="mut">${esc(rlab(r))} ${st.by_rarity[r]||0} / ${st.pool_by_rarity[r]||0}</span><div class="bar"><i style="width:${((st.by_rarity[r]||0)/Math.max(1,st.pool_by_rarity[r]||0)*100).toFixed(1)}%"></i></div></div>`).join('')}</div>
+    </div>
+    <div class="box">
+      <div class="tabs" id="tC"></div><div class="tabs" id="tK"></div><div class="tabs" id="tR"></div>
+      <div class="mut" id="cnt"></div><div class="mut">${t('fav_hint')}</div>
+      <div class="grid" id="grid" style="margin-top:8px"></div>
+    </div>`;
+  const tabs = (id, items, key) => { const el=document.getElementById(id);
+    el.innerHTML = [['',t('all')],...items].map(([k,l])=>`<button data-k="${esc(k)}" class="${state[key]===k?'on':''}">${l}</button>`).join('');
+    el.onclick = e=>{ const b=e.target.closest('button'); if(!b) return; state[key]=b.dataset.k; render(); }; };
+  function render(){
+    tabs('tC', groups.map(c=>[c,`${flagOf(c)}${esc(gn(c))} ${byG[c]?.o||0}/${byG[c]?.t||0}`]), 'group');
+    const cats = [...new Set(ITEMS.map(v=>v.category).filter(Boolean))];
+    tabs('tK', cats.map(k=>[k,catN(k)]), 'cat');
+    tabs('tR', [...[...RAR].reverse().map(r=>[r,r]), ['__owned', state.ownedOnly?'☑ '+t('owned_only'):'☐ '+t('owned_only')]], 'rar');
+    if (state.rar==='__owned'){ state.ownedOnly=!state.ownedOnly; state.rar=''; return render(); }
+    const list = ITEMS.filter(v=>(!state.group||v.group===state.group)&&(!state.cat||v.category===state.cat)&&(!state.rar||v.rarity===state.rar)&&(!state.ownedOnly||owned[v.id]));
+    list.sort((a,b)=>(owned[b.id]?1:0)-(owned[a.id]?1:0)||RAR.indexOf(b.rarity)-RAR.indexOf(a.rarity)||((b.meta||{}).rank||0)-((a.meta||{}).rank||0));
+    document.getElementById('cnt').textContent = `${list.filter(v=>owned[v.id]).length} / ${list.length}`;
+    document.getElementById('grid').innerHTML = (list.slice(0,600).map(v=>vcard(v,{owned:owned[v.id],count:owned[v.id]?.n,fav:fav.includes(v.id)})).join('') + (list.length>600?`<div class="mut">…+${list.length-600}</div>`:'')) || `<div class="mut">${t('no_items')}</div>`;
+  }
+  document.getElementById('grid').onclick = e=>{ const c=e.target.closest('.v'); if(!c) return; const id=c.dataset.vid; if(!owned[id]) return;
+    if (fav.includes(id)) fav=fav.filter(x=>x!==id); else { if(fav.length>=9){ alert(LANG==='ja'?'お気に入りは9個までです':'Max 9 favorites'); return; } fav.push(id); }
+    setFav(uid,fav); render(); };
+  render();
+}
+
+/* ===================== showcase ===================== */
+async function showcase(q){
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="box mut">loading…</div>`;
+  await loadItems();
+  const d = await (await fetch('/api/user?q='+encodeURIComponent(q)+gq('&'))).json();
+  if (!d.ok) return collection(q);
+  const u = d.user, uid = u.user_id || ('@'+u.handle), owned = d.owned, st = d.stats;
+  let fav = getFav(uid).filter(id=>owned[id]);
+  if (!fav.length){ // 既定: レア度の高い順に9個
+    fav = Object.keys(owned).sort((a,b)=>RAR.indexOf(VBY[b]?.rarity)-RAR.indexOf(VBY[a]?.rarity)||((VBY[b]?.meta||{}).rank||0)-((VBY[a]?.meta||{}).rank||0)).slice(0,9);
+  }
+  app.innerHTML = `<div class="box">
+    <div class="row"><a class="btn sm" href="${upath(uid)}" data-nav>← ${esc(u.display_name||u.handle)}</a>
+      <select id="fmt" class="btn sm"><option value="story">${t('story')}</option><option value="square">${t('square')}</option></select>
+      <input type="text" id="cap" placeholder="${t('cap_ph')}" style="flex:1;min-width:160px;font-size:14px;padding:6px 10px">
+      <button class="btn gold" id="mk">${t('make')}</button><button class="btn" id="dl">${t('download')}</button><button class="btn mag" id="sh">${t('share')}</button></div>
+    <div class="mut" style="margin-top:6px">${t('fav_hint')}</div>
+    <div id="stageWrap" style="margin-top:10px"><canvas id="cv"></canvas><div style="flex:1;min-width:260px"><div class="grid" id="pick"></div></div></div></div>`;
+  const pick = document.getElementById('pick');
+  const renderPick = ()=>{ const list = Object.keys(owned).sort((a,b)=>RAR.indexOf(VBY[b]?.rarity)-RAR.indexOf(VBY[a]?.rarity));
+    pick.innerHTML = list.slice(0,300).map(id=>VBY[id]?vcard(VBY[id],{owned:true,count:owned[id].n,fav:fav.includes(id)}):'').join(''); };
+  pick.onclick = e=>{ const c=e.target.closest('.v'); if(!c) return; const id=c.dataset.vid;
+    if (fav.includes(id)) fav=fav.filter(x=>x!==id); else { if(fav.length>=9) return alert(LANG==='ja'?'9個までです':'Max 9'); fav.push(id); }
+    setFav(uid,fav); renderPick(); draw(); };
+  renderPick();
+  const cv = document.getElementById('cv');
+  const title = (LANG==='ja'?CFG.name:(CFG.name_en||CFG.name)) || 'GACHA';
+  const accent = LEG.length ? RC(LEG[0]) : '#00ffff';
+  async function draw(){
+    const story = document.getElementById('fmt').value==='story';
+    const W=1080, H=story?1920:1080; cv.width=W; cv.height=H; const g=cv.getContext('2d');
+    await document.fonts.ready;
+    const bg = g.createLinearGradient(0,0,W,H); bg.addColorStop(0,'#05060f'); bg.addColorStop(1,'#120a1c'); g.fillStyle=bg; g.fillRect(0,0,W,H);
+    for (let i=0;i<70;i++){ g.fillStyle=`rgba(255,255,255,${Math.random()*.5})`; g.beginPath(); g.arc(Math.random()*W,Math.random()*H,Math.random()*2.2,0,7); g.fill(); }
+    const F = w => `${w} "M PLUS Rounded 1c", sans-serif`;
+    const neon = (txt,x,y,col,size,align='center')=>{ g.font=F('900 '+size+'px'); g.textAlign=align; g.shadowColor=col; g.shadowBlur=24; g.fillStyle=col; g.fillText(txt,x,y); g.shadowBlur=0; };
+    const top = story?140:70;
+    neon(title, W/2, top, '#00ffff', story?64:48);
+    g.font=F('700 '+(story?30:22)+'px'); g.fillStyle='#ccc'; g.textAlign='center'; g.fillText(`${CFG.streamer||''} LIVE  ·  ${location.host}`, W/2, top+(story?44:32));
+    neon(u.display_name||u.handle||u.user_id, W/2, top+(story?130:95), '#ffffff', story?60:44);
+    g.font=F('700 '+(story?30:22)+'px'); g.fillStyle='#9a9ab0'; g.fillText(`@${u.handle||''}  ·  ${t('unique')} ${st.unique} / ${st.pool_total}`, W/2, top+(story?176:130));
+    const RR = [...RAR].reverse();
+    const bx=120, bw=W-240, by=top+(story?230:170), bh=story?26:18, gap=story?44:30;
+    RR.forEach((r,i)=>{ const y=by+i*gap; g.fillStyle='#1b1b26'; g.fillRect(bx,y,bw,bh); g.fillStyle=RC(r); g.shadowColor=RC(r); g.shadowBlur=12;
+      g.fillRect(bx,y,bw*Math.min(1,(st.by_rarity[r]||0)/Math.max(1,st.pool_by_rarity[r]||0)),bh); g.shadowBlur=0;
+      g.font=F('900 '+(story?22:16)+'px'); g.textAlign='left'; g.fillStyle='#fff'; g.fillText(`${r}  ${st.by_rarity[r]||0}/${st.pool_by_rarity[r]||0}`, bx+8, y+bh-(story?5:3)); });
+    const n=fav.length, cols=3, rows=Math.ceil(n/cols)||1;
+    const gy = by + RR.length*gap + (story?40:20), avail = H - gy - (story?170:110);
+    const cw=(W-80-(cols-1)*20)/cols, ch=Math.min(cw*1.0, avail/rows-20);
+    const flags = await Promise.all(fav.map(id=>{ const v=VBY[id]||{}; return flagImages({country:v.group||'', operator:(v.meta||{}).operator||''}); }));
+    const imgs = await Promise.all(fav.map(id=>new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=()=>res(null); im.src=IMG(id); })));
+    fav.forEach((id,i)=>{ const v=VBY[id]; if(!v) return; const m=v.meta||{}; const x=40+(i%cols)*(cw+20), y=gy+Math.floor(i/cols)*(ch+20), col=RC(v.rarity);
+      g.fillStyle='rgba(0,0,0,.6)'; g.strokeStyle=col; g.lineWidth=5; g.shadowColor=col; g.shadowBlur=22; roundRect(g,x,y,cw,ch,22); g.fill(); g.stroke(); g.shadowBlur=0;
+      const im=imgs[i]; if(im){ const ih=ch*0.56, iw=Math.min(cw-24, ih*2); g.drawImage(im, x+(cw-iw)/2, y+14, iw, ih); }
+      g.font=F('900 '+(story?18:14)+'px'); g.textAlign='left'; g.fillStyle=col; g.fillText(v.rarity, x+12, y+(story?26:20));
+      g.textAlign='center'; g.fillStyle='#fff'; g.font=F('900 '+(story?24:17)+'px');
+      { const fh=story?20:14, fw=fh*1.5, ty=y+ch-(story?36:26), fl=flags[i]||[], fwAll=fl.length*(fw+4); const label=vname(v); let txt=label; while(g.measureText(txt).width>cw-30-fwAll && txt.length>3) txt=txt.slice(0,-2)+'…';
+        const tw=g.measureText(txt).width, sx=x+cw/2-(tw+fwAll+4)/2; fl.forEach((fi,j)=>g.drawImage(fi, sx+j*(fw+4), ty-fh+3, fw, fh));
+        g.textAlign='left'; g.fillText(txt, sx+fwAll+4, ty); g.textAlign='center'; }
+      g.font=F('700 '+(story?16:12)+'px'); g.fillStyle='#9a9ab0'; g.fillText([gn(v.group), m.rank?'R'+m.rank:'', m.br?'BR '+m.br:'', owned[id].n>1?'×'+owned[id].n:''].filter(Boolean).join(' · '), x+cw/2, y+ch-(story?12:9)); });
+    const cap = document.getElementById('cap').value.trim();
+    if (cap){ g.font=F('700 '+(story?34:24)+'px'); g.textAlign='center'; g.fillStyle='#fff'; fitText(g, cap, W/2, H-(story?110:70), W-120); }
+    if (CFG.credit){ g.font=F('700 '+(story?22:16)+'px'); g.fillStyle='#777'; g.textAlign='center'; g.fillText(CFG.credit, W/2, H-(story?40:24)); }
+  }
+  function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+  function fitText(g,txt,x,y,maxw){ let s=txt; while(g.measureText(s).width>maxw && s.length>3) s=s.slice(0,-2)+'…'; g.fillText(s,x,y); }
+  document.getElementById('mk').onclick = draw; document.getElementById('fmt').onchange = draw; document.getElementById('cap').onchange = draw;
+  const fname = ()=>`${GID}gacha_${(u.handle||u.user_id||'me').replace(/[^\w]/g,'')}.png`;
+  document.getElementById('dl').onclick = ()=>{ const a=document.createElement('a'); a.download=fname(); a.href=cv.toDataURL('image/png'); a.click(); };
+  document.getElementById('sh').onclick = async()=>{ cv.toBlob(async b=>{ const f=new File([b],fname(),{type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[f]})) { try{ await navigator.share({files:[f], text:title}); }catch(e){} }
+    else document.getElementById('dl').click(); }); };
+  await draw();
+}
+route();
+</script>
+</body>
+</html>
