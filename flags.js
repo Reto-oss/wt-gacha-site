@@ -92,9 +92,23 @@
   // 画像が 404 のとき(2026-11-07): <img data-c=国 data-o=運用国 data-n=名前 onerror="noImg(this)"> を国旗＋名前の箱(.noimg)に置き換える。
   // 文字サイズや箱の形は置き場所ごとの CSS(.imgwrap .noimg / .cell .noimg / .islides .noimg など)で決める。
   const escT = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-  const noImg = img => { try{ const d = img.dataset || {}; const box = document.createElement('div'); box.className = 'noimg';
-      box.innerHTML = flagImg({country:d.c||'', operator:d.o||''}, 'nf') + (d.n ? `<span>${escT(d.n)}</span>` : '');
+  // 2026-11-08: 公式画像が無いとき(404)はカテゴリのシルエット(飛行機/戦車/ヘリ/UAV/艦艇)＋国旗＋名前。シルエットは currentColor で塗る(色は置き場所の CSS)。
+  //   data-k=plane|tank|heli|uav|ship(silKind が決める)。data-k が無い呼び出し元(サイトなど)は従来どおり国旗＋名前だけ
+  const SIL = {
+    plane: '<svg class="sil" viewBox="0 0 200 100" fill="currentColor"><path d="M196 50 172 45 122 43 97 9 83 9 91 43 46 45 32 24 23 24 27 46 8 48 8 52 27 54 23 76 32 76 46 55 91 57 83 91 97 91 122 57 172 55Z"/></svg>',
+    tank: '<svg class="sil" viewBox="0 0 200 100" fill="currentColor"><path d="M60 58 68 40 116 37 128 44 196 44 196 51 128 51 130 58Z"/><path d="M14 60H186L176 70H24Z"/><rect x="16" y="70" width="168" height="22" rx="11"/><g fill="#000" fill-opacity=".45"><circle cx="34" cy="81" r="7"/><circle cx="60" cy="81" r="7"/><circle cx="86" cy="81" r="7"/><circle cx="112" cy="81" r="7"/><circle cx="138" cy="81" r="7"/><circle cx="164" cy="81" r="7"/></g></svg>',
+    heli: '<svg class="sil" viewBox="0 0 200 100" fill="currentColor"><rect x="14" y="20" width="150" height="5" rx="2.5"/><rect x="84" y="24" width="7" height="12"/><path d="M40 58C40 44 58 34 86 34H112C126 34 132 44 134 52L190 46 192 52 134 64C124 72 108 74 92 74H62C48 74 40 68 40 58Z"/><path d="M180 47 190 28H196L192 52Z"/><rect x="56" y="74" width="5" height="10"/><rect x="104" y="74" width="5" height="10"/><rect x="44" y="84" width="82" height="4" rx="2"/></svg>',
+    uav: '<svg class="sil" viewBox="0 0 200 100" fill="currentColor"><path d="M100 50 52 18M100 50 148 18M100 50 52 82M100 50 148 82" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><rect x="84" y="38" width="32" height="24" rx="7"/><g fill-opacity=".45" stroke="currentColor" stroke-width="3"><ellipse cx="52" cy="18" rx="26" ry="9"/><ellipse cx="148" cy="18" rx="26" ry="9"/><ellipse cx="52" cy="82" rx="26" ry="9"/><ellipse cx="148" cy="82" rx="26" ry="9"/></g><circle cx="100" cy="50" r="4" fill="#000" fill-opacity=".5"/></svg>',
+    ship: '<svg class="sil" viewBox="0 0 200 100" fill="currentColor"><path d="M4 62H196L180 80H22Z"/><rect x="62" y="44" width="54" height="18"/><rect x="76" y="30" width="24" height="14"/><rect x="86" y="10" width="3" height="20"/><rect x="104" y="34" width="9" height="10"/><path d="M30 54H48V62H30ZM48 56H62V58H48ZM132 54H150V62H132ZM118 56H132V58H118Z"/></svg>'
+  };
+  const silKind = v => { v = v || {}; const id = String(v.id||'').toLowerCase(), nm = String(v.name_en||v.name||'');
+    if (/^uav_|_uav\b|drone|quadcopter/.test(id) || /\bUAV\b/i.test(nm)) return 'uav';
+    return {air:'plane', ground:'tank', heli:'heli', naval:'ship'}[v.category] || ''; };
+  const noImg = img => { try{ const d = img.dataset || {}; const box = document.createElement('div'); const sil = SIL[d.k] || '';
+      box.className = 'noimg' + (sil ? ' withsil' : '');
+      box.innerHTML = sil + flagImg({country:d.c||'', operator:d.o||''}, 'nf') + (d.n ? `<span>${escT(d.n)}</span>` : '');
       img.replaceWith(box); }catch(e){ img.style.visibility='hidden'; } };
+  window.silKind = silKind; window.SIL = SIL;
   window.noImg = noImg;
   window.FLAG_SRC=FLAG_SRC; window.flagKeys=flagKeys; window.flagImg=flagImg; window.flagImage=flagImage; window.flagImages=flagImages;
 })();
