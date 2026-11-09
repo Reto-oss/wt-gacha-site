@@ -32,6 +32,11 @@
   .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative;cursor:pointer;transition:transform .12s}
   .v:hover{transform:translateY(-2px)}
   .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
+  /* 2026-11-09: 画像が無いとき(ローカルも公式も無い)。シルエットは中間の灰色、レア度の色は光だけ。「画像なし / No image」を必ず出す */
+  .v .noimg{width:100%;aspect-ratio:2/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:8px;background:repeating-linear-gradient(135deg,#ffffff08 0 8px,#0000 8px 16px)}
+  .v .noimg .sil{height:56%;width:auto;max-width:86%;color:#b9bfcc;filter:drop-shadow(0 0 5px var(--rc))}
+  .v .noimg .nil{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#c8ccd6;line-height:1}
+  .v .noimg .nf{height:11px;width:auto;border-radius:2px}
   .v .n{font-size:13px;font-weight:700;line-height:1.2;min-height:2.4em}
   .v .s{font-size:11px;color:var(--mut)}
   .v.no{opacity:.28;filter:grayscale(1)}
@@ -122,7 +127,17 @@ const RC = r => (RB[r]?.color==='rainbow') ? '#ff4fd8' : (RB[r]?.color || getCom
 const isRB = r => RB[r]?.color==='rainbow';
 const rlab = r => RB[r] ? (LANG==='ja' ? (RB[r].label||r) : (RB[r].label_en||RB[r].label||r)) : r;
 const STATIC = !!(window.STATIC_SITE || location.protocol==='file:'); // 2026-11-08 静的モード: GitHub Pages などデーモンの無い所では site_export の JSON を読む
-const IMG = id => (window.DEMO || STATIC) ? (VBY[id]?.img || '') : `/img/${encodeURIComponent(GID)}/${encodeURIComponent(id)}.png`;
+const IMG = id => window.DEMO ? (VBY[id]?.img || '') : STATIC ? `img/${encodeURIComponent(GID)}/${encodeURIComponent(id)}.webp` : `/img/${encodeURIComponent(GID)}/${encodeURIComponent(id)}.png`;
+const IMG_ALT = id => VBY[id]?.img || '';   // 2026-11-09: 2 番目 = 公式(static.encyclopedia.warthunder.com)。1 番目はサイトと同じ場所の WebP(site_export.py が書き出す)
+const NOIMG_TXT = '画像なし / No image';
+// 画像の順番: 1 ローカル WebP → 2 公式 URL → 3 カテゴリのシルエット＋国旗＋「画像なし / No image」(flags.js の SIL/silKind/flagImg を使う)。空のカードは出さない
+window.siteImgErr = img => { const d = img.dataset || {};
+  if (d.alt && !d.tried){ d.tried = '1'; img.src = d.alt; return; }
+  const box = document.createElement('div'); box.className = 'noimg';
+  const sil = (window.SIL && d.k && SIL[d.k]) || '';
+  let fl = ''; try{ fl = window.flagImg ? flagImg({country:d.c||'', operator:d.o||''}, 'nf') : ''; }catch(e){}
+  box.innerHTML = sil + `<div class="nil">${fl}<span>${NOIMG_TXT}</span></div>`;
+  img.replaceWith(box); };
 const gq = (sep='?') => sep + 'gacha=' + encodeURIComponent(GID);
 if (window.DEMO){ // デモ: /api/* を同梱データで応答(静的公開の下準備)
   const _f = window.fetch.bind(window);
@@ -289,7 +304,7 @@ function vcard(v, o={}){
   const sub = o.who ? esc(o.who) : [gn(v.group), v.category?catN(v.category):'', m.rank?'R'+m.rank:'', m.br?'BR'+m.br:''].filter(Boolean).join(' ');
   return `<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
     <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}
-    <img loading="lazy" src="${IMG(v.id)}" onerror="this.style.visibility='hidden'">
+    <img loading="lazy" src="${IMG(v.id)}" data-alt="${esc(IMG_ALT(v.id))}" data-k="${esc(window.silKind?silKind(v):'')}" data-c="${esc(v.group||'')}" data-o="${esc(m.operator||'')}" onerror="siteImgErr(this)">
     <div class="n">${flagOf(v)}${esc(vname(v))}</div>
     <div class="s">${sub}</div></div>`;
 }
@@ -398,10 +413,14 @@ async function showcase(q){
     const gy = by + RR.length*gap + (story?40:20), avail = H - gy - (story?170:110);
     const cw=(W-80-(cols-1)*20)/cols, ch=Math.min(cw*1.0, avail/rows-20);
     const flags = await Promise.all(fav.map(id=>{ const v=VBY[id]||{}; return flagImages({country:v.group||'', operator:(v.meta||{}).operator||''}); }));
-    const imgs = await Promise.all(fav.map(id=>new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=()=>res(null); im.src=IMG(id); })));
+    const load1 = src => new Promise(res=>{ if(!src) return res(null); const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; });
+    const imgs = await Promise.all(fav.map(async id=> (await load1(IMG(id))) || (await load1(IMG_ALT(id)))));   // 2026-11-09: ローカル WebP(同じオリジン)→ 公式。どちらも無ければ下でシルエット
     fav.forEach((id,i)=>{ const v=VBY[id]; if(!v) return; const m=v.meta||{}; const x=40+(i%cols)*(cw+20), y=gy+Math.floor(i/cols)*(ch+20), col=RC(v.rarity);
       g.fillStyle='rgba(0,0,0,.6)'; g.strokeStyle=col; g.lineWidth=5; g.shadowColor=col; g.shadowBlur=22; roundRect(g,x,y,cw,ch,22); g.fill(); g.stroke(); g.shadowBlur=0;
-      const im=imgs[i]; if(im){ const ih=ch*0.56, iw=Math.min(cw-24, ih*2); g.drawImage(im, x+(cw-iw)/2, y+14, iw, ih); }
+      const im=imgs[i]; { const ih=ch*0.56, iw=Math.min(cw-24, ih*2);
+        if(im) g.drawImage(im, x+(cw-iw)/2, y+14, iw, ih);
+        else { drawSil(g, window.silKind?silKind(v):'', x+(cw-iw)/2+iw*0.12, y+14+ih*0.06, iw*0.76, ih*0.7, '#b9bfcc', col);
+               g.font=F('700 '+(story?18:13)+'px'); g.textAlign='center'; g.fillStyle='#c8ccd6'; g.fillText(NOIMG_TXT, x+cw/2, y+14+ih*0.92); } }
       g.font=F('900 '+(story?18:14)+'px'); g.textAlign='left'; g.fillStyle=col; g.fillText(v.rarity, x+12, y+(story?26:20));
       g.textAlign='center'; g.fillStyle='#fff'; g.font=F('900 '+(story?24:17)+'px');
       { const fh=story?20:14, fw=fh*1.5, ty=y+ch-(story?36:26), fl=flags[i]||[], fwAll=fl.length*(fw+4); const label=vname(v); let txt=label; while(g.measureText(txt).width>cw-30-fwAll && txt.length>3) txt=txt.slice(0,-2)+'…';
@@ -412,6 +431,26 @@ async function showcase(q){
     if (cap){ g.font=F('700 '+(story?34:24)+'px'); g.textAlign='center'; g.fillStyle='#fff'; fitText(g, cap, W/2, H-(story?110:70), W-120); }
     if (CFG.credit){ g.font=F('700 '+(story?22:16)+'px'); g.fillStyle='#777'; g.textAlign='center'; g.fillText(CFG.credit, W/2, H-(story?40:24)); }
   }
+  // 2026-11-09: flags.js の SIL(SVG)を Path2D でキャンバスに描く(画像として読まないのでキャンバスが汚れない)。path/rect/circle/ellipse/g に対応
+  function drawSil(g, kind, x, y, w, h, col, glow){ const s=(window.SIL||{})[kind]; if(!s) return false;
+    const svg=new DOMParser().parseFromString(s.replace(/currentColor/g,'CUR'),'image/svg+xml').documentElement;
+    const vb=(svg.getAttribute('viewBox')||'0 0 200 100').split(/[\s,]+/).map(Number), sc=Math.min(w/vb[2], h/vb[3]);
+    g.save(); g.translate(x+(w-vb[2]*sc)/2, y+(h-vb[3]*sc)/2); g.scale(sc,sc); g.shadowColor=glow||col; g.shadowBlur=12;
+    const C=f=>(!f||f==='CUR')?col:f;
+    const walk=(el,inh)=>{ for(const c of el.children){ const A=k=>parseFloat(c.getAttribute(k)||'0');
+      const st={fill:c.getAttribute('fill')??inh.fill, op:inh.op*parseFloat(c.getAttribute('fill-opacity')??'1'), stroke:c.getAttribute('stroke')??inh.stroke, sw:parseFloat(c.getAttribute('stroke-width')??inh.sw), cap:c.getAttribute('stroke-linecap')??inh.cap};
+      const tag=c.tagName.toLowerCase(); if(tag==='g'){ walk(c,st); continue; }
+      let p=new Path2D();
+      if(tag==='path') p=new Path2D(c.getAttribute('d')||'');
+      else if(tag==='rect'){ const r=A('rx'); if(r&&p.roundRect) p.roundRect(A('x'),A('y'),A('width'),A('height'),r); else p.rect(A('x'),A('y'),A('width'),A('height')); }
+      else if(tag==='circle') p.arc(A('cx'),A('cy'),A('r'),0,Math.PI*2);
+      else if(tag==='ellipse') p.ellipse(A('cx'),A('cy'),A('rx'),A('ry'),0,0,Math.PI*2);
+      else continue;
+      if(st.fill!=='none'){ g.globalAlpha=st.op; g.fillStyle=C(st.fill); g.fill(p); }
+      if(st.stroke&&st.stroke!=='none'){ g.globalAlpha=st.op; g.strokeStyle=C(st.stroke); g.lineWidth=st.sw||1; g.lineCap=st.cap||'butt'; g.stroke(p); }
+      g.globalAlpha=1; } };
+    walk(svg,{fill:svg.getAttribute('fill')||'CUR', op:1, stroke:null, sw:1, cap:'butt'});
+    g.restore(); return true; }
   function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
   function fitText(g,txt,x,y,maxw){ let s=txt; while(g.measureText(s).width>maxw && s.length>3) s=s.slice(0,-2)+'…'; g.fillText(s,x,y); }
   document.getElementById('mk').onclick = draw; document.getElementById('fmt').onchange = draw; document.getElementById('cap').onchange = draw;
