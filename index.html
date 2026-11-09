@@ -32,6 +32,7 @@
   .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative;cursor:pointer;transition:transform .12s}
   .v:hover{transform:translateY(-2px)}
   .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
+  .v .ret{position:absolute;left:50%;transform:translateX(-50%);top:6px;font-size:10px;font-weight:800;color:#c8ccd6;background:#0009;border:1px solid #fff3;border-radius:6px;padding:0 6px;white-space:nowrap}
   /* 2026-11-09: ギフト表(画像つき) */
   .gl{display:flex;flex-direction:column;gap:8px}
   .gli{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-areas:"img name" "img vals" "img guar";column-gap:12px;row-gap:4px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border-left:4px solid var(--gc)}
@@ -216,10 +217,14 @@ function renderGTabs(){
   const el = document.getElementById('gtabs');
   el.innerHTML = GACHAS.length>1 ? GACHAS.map(g=>`<a href="/g/${encodeURIComponent(g.id)}/" data-nav class="${g.id===GID?'on':''}">${esc(LANG==='ja'?g.name:(g.name_en||g.name))}</a>`).join('') : '';
 }
+let ITEM_IDS = new Set();
+const RET_TXT = () => LANG==='ja' ? 'プール外' : 'retired';
+const retNote = st => st && st.retired ? ` <span class="mut" style="font-size:12px">（＋${RET_TXT()} ${st.retired}）</span>` : '';
 async function loadItems(){ if (ITEMS) return; const d = await (await fetch('/api/items'+gq())).json(); const all = d.items||d.vehicles||d;
   const pc = CFG.pool||{}, cats=new Set(pc.categories||[]), grs=new Set(pc.groups||pc.countries||[]), ex=new Set(pc.exclude_ids||[]), mr=pc.min_rank||0;
   all.forEach(v=>VBY[v.id]=v);
-  ITEMS = all.filter(v=>RAR.includes(v.rarity)&&(!cats.size||cats.has(v.category))&&(!grs.size||grs.has(v.group))&&!ex.has(v.id)&&(!mr||((v.meta||{}).rank||0)>=mr)); }
+  ITEMS = all.filter(v=>RAR.includes(v.rarity)&&(!cats.size||cats.has(v.category))&&(!grs.size||grs.has(v.group))&&!ex.has(v.id)&&(!mr||((v.meta||{}).rank||0)>=mr));
+  ITEM_IDS = new Set(ITEMS.map(v=>v.id)); }   // 2026-11-09: プールから外れた所持(画像なし等)は一覧には出すが、進み具合には数えない
 const fmtTs = ts => new Date(ts*1000).toLocaleString(LANG==='ja'?'ja-JP':'en-US',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 const fmtPct = p => p>=1 ? p.toFixed(p>=10?0:1)+'%' : p>=0.1 ? p.toFixed(2)+'%' : p.toFixed(3)+'%';
 const oneIn = p => p>0 ? '1/'+Math.round(100/p).toLocaleString() : '—';
@@ -330,7 +335,7 @@ function vcard(v, o={}){
   const owned = !!o.owned; const m=v.meta||{};
   const sub = o.who ? esc(o.who) : [gn(v.group), v.category?catN(v.category):'', m.rank?'R'+m.rank:'', m.br?'BR'+m.br:''].filter(Boolean).join(' ');
   return `<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
-    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}
+    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}${o.retired?`<div class="ret">${RET_TXT()}</div>`:''}
     <img loading="lazy" src="${IMG(v.id)}" data-alt="${esc(IMG_ALT(v.id))}" data-k="${esc(window.silKind?silKind(v):'')}" data-c="${esc(v.group||'')}" data-o="${esc(m.operator||'')}" onerror="siteImgErr(this)">
     <div class="n">${flagOf(v)}${esc(vname(v))}</div>
     <div class="s">${sub}</div></div>`;
@@ -358,7 +363,7 @@ async function collection(q){
       </div>
       ${u.user_id?`<div style="margin-top:10px"><div class="mut">${t('your_id')}</div><div class="idbox">${esc(u.user_id)}</div><div class="mut">${t('bookmark')}: <code>${HASHMODE?location.origin+location.pathname+'#':location.origin}${upath(u.user_id)}</code>${GACHAS.length>1?` ・ <a href="/u/${encodeURIComponent(u.user_id)}" data-nav>${t('all_gachas')}</a>`:''}</div></div>`:''}
       <div class="row" style="margin-top:12px;gap:24px">
-        <div><div class="mut">${t('unique')}</div><div class="big" style="font-size:30px">${st.unique} <span class="mut" style="font-size:14px">/ ${st.pool_total}</span></div></div>
+        <div><div class="mut">${t('unique')}</div><div class="big" style="font-size:30px">${st.unique} <span class="mut" style="font-size:14px">/ ${st.pool_total}</span>${retNote(st)}</div></div>
         <div><div class="mut">${t('pulls')}</div><div class="big" style="font-size:30px;color:var(--mag);text-shadow:0 0 10px var(--mag)">${st.pulls}</div></div>
         ${CFG.pity?.sr_within?`<div class="mut">${t('pity_sr')} <b>${Math.max(0,(CFG.pity?.sr_within||0)-u.since_sr)}</b></div>`:''}
       </div>
@@ -378,10 +383,11 @@ async function collection(q){
     tabs('tK', cats.map(k=>[k,catN(k)]), 'cat');
     tabs('tR', [...[...RAR].reverse().map(r=>[r,r]), ['__owned', state.ownedOnly?'☑ '+t('owned_only'):'☐ '+t('owned_only')]], 'rar');
     if (state.rar==='__owned'){ state.ownedOnly=!state.ownedOnly; state.rar=''; return render(); }
-    const list = ITEMS.filter(v=>(!state.group||v.group===state.group)&&(!state.cat||v.category===state.cat)&&(!state.rar||v.rarity===state.rar)&&(!state.ownedOnly||owned[v.id]));
+    const RET = Object.keys(owned).filter(id=>!ITEM_IDS.has(id) && VBY[id]).map(id=>VBY[id]);   // 2026-11-09: プールから外れた所持も一覧に出す
+    const list = ITEMS.concat(RET).filter(v=>(!state.group||v.group===state.group)&&(!state.cat||v.category===state.cat)&&(!state.rar||v.rarity===state.rar)&&(!state.ownedOnly||owned[v.id]));
     list.sort((a,b)=>(owned[b.id]?1:0)-(owned[a.id]?1:0)||RAR.indexOf(b.rarity)-RAR.indexOf(a.rarity)||((b.meta||{}).rank||0)-((a.meta||{}).rank||0));
     document.getElementById('cnt').textContent = `${list.filter(v=>owned[v.id]).length} / ${list.length}`;
-    document.getElementById('grid').innerHTML = (list.slice(0,600).map(v=>vcard(v,{owned:owned[v.id],count:owned[v.id]?.n,fav:fav.includes(v.id)})).join('') + (list.length>600?`<div class="mut">…+${list.length-600}</div>`:'')) || `<div class="mut">${t('no_items')}</div>`;
+    document.getElementById('grid').innerHTML = (list.slice(0,600).map(v=>vcard(v,{owned:owned[v.id],count:owned[v.id]?.n,fav:fav.includes(v.id),retired:!ITEM_IDS.has(v.id)})).join('') + (list.length>600?`<div class="mut">…+${list.length-600}</div>`:'')) || `<div class="mut">${t('no_items')}</div>`;
   }
   document.getElementById('grid').onclick = e=>{ const c=e.target.closest('.v'); if(!c) return; const id=c.dataset.vid; if(!owned[id]) return;
     if (fav.includes(id)) fav=fav.filter(x=>x!==id); else { if(fav.length>=9){ alert(LANG==='ja'?'お気に入りは9個までです':'Max 9 favorites'); return; } fav.push(id); }
