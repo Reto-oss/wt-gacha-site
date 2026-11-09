@@ -106,7 +106,9 @@
     return {air:'plane', ground:'tank', heli:'heli', naval:'ship'}[v.category] || ''; };
   const noImg = img => { try{ const d = img.dataset || {}; const box = document.createElement('div'); const sil = SIL[d.k] || '';
       box.className = 'noimg' + (sil ? ' withsil' : '');
-      box.innerHTML = sil + flagImg({country:d.c||'', operator:d.o||''}, 'nf') + (d.n ? `<span>${escT(d.n)}</span>` : '');
+      // 2026-11-09: 名前はカード側に出ているので出さない(二重になっていた)。代わりに「画像なし / No image」。シルエットが無い呼び出し元(サイトの旧版など)は従来どおり国旗＋名前
+      box.innerHTML = sil ? sil + `<div class="nil">${flagImg({country:d.c||'', operator:d.o||''}, 'nf')}<span>画像なし / No image</span></div>`
+                          : flagImg({country:d.c||'', operator:d.o||''}, 'nf') + (d.n ? `<span>${escT(d.n)}</span>` : '');
       img.replaceWith(box); }catch(e){ img.style.visibility='hidden'; } };
   window.silKind = silKind; window.SIL = SIL;
   window.noImg = noImg;
