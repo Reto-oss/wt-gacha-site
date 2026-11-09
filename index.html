@@ -218,8 +218,10 @@ function renderGTabs(){
   el.innerHTML = GACHAS.length>1 ? GACHAS.map(g=>`<a href="/g/${encodeURIComponent(g.id)}/" data-nav class="${g.id===GID?'on':''}">${esc(LANG==='ja'?g.name:(g.name_en||g.name))}</a>`).join('') : '';
 }
 let ITEM_IDS = new Set();
-const RET_TXT = () => LANG==='ja' ? 'プール外' : 'retired';
-const retNote = st => st && st.retired ? ` <span class="mut" style="font-size:12px">（＋${RET_TXT()} ${st.retired}）</span>` : '';
+// 2026-11-09: プールから外れた所持の呼び名(本人指示)「限定排出終了」/ "Limited · Ended"
+const RET_TXT = () => LANG==='ja' ? '限定排出終了' : 'Limited · Ended';
+const RET_HELP = () => LANG==='ja' ? '排出が終了し、今はもう出ない兵器です' : 'No longer available from the gacha.';
+const retNote = st => st && st.retired ? ` <span class="mut" style="font-size:12px" title="${RET_HELP()}">（${LANG==='ja' ? '＋'+RET_TXT()+' '+st.retired : '+'+st.retired+' '+RET_TXT()}）</span>` : '';
 async function loadItems(){ if (ITEMS) return; const d = await (await fetch('/api/items'+gq())).json(); const all = d.items||d.vehicles||d;
   const pc = CFG.pool||{}, cats=new Set(pc.categories||[]), grs=new Set(pc.groups||pc.countries||[]), ex=new Set(pc.exclude_ids||[]), mr=pc.min_rank||0;
   all.forEach(v=>VBY[v.id]=v);
@@ -335,7 +337,7 @@ function vcard(v, o={}){
   const owned = !!o.owned; const m=v.meta||{};
   const sub = o.who ? esc(o.who) : [gn(v.group), v.category?catN(v.category):'', m.rank?'R'+m.rank:'', m.br?'BR'+m.br:''].filter(Boolean).join(' ');
   return `<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
-    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}${o.retired?`<div class="ret">${RET_TXT()}</div>`:''}
+    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}${o.retired?`<div class="ret" title="${RET_HELP()}">${RET_TXT()}</div>`:''}
     <img loading="lazy" src="${IMG(v.id)}" data-alt="${esc(IMG_ALT(v.id))}" data-k="${esc(window.silKind?silKind(v):'')}" data-c="${esc(v.group||'')}" data-o="${esc(m.operator||'')}" onerror="siteImgErr(this)">
     <div class="n">${flagOf(v)}${esc(vname(v))}</div>
     <div class="s">${sub}</div></div>`;
