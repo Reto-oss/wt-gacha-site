@@ -32,6 +32,15 @@
   .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative;cursor:pointer;transition:transform .12s}
   .v:hover{transform:translateY(-2px)}
   .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
+  /* 2026-11-09: ギフト表(画像つき) */
+  .gl{display:flex;flex-direction:column;gap:8px}
+  .gli{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-areas:"img name" "img vals" "img guar";column-gap:12px;row-gap:4px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border-left:4px solid var(--gc)}
+  .gli img{grid-area:img;width:64px;height:64px;object-fit:contain}
+  .gln{grid-area:name;min-width:0}.gln b{font-size:17px;font-weight:900;margin-right:8px}.gln .mut{font-size:12px}
+  .glv{grid-area:vals;display:flex;gap:14px;flex-wrap:wrap}.glv>div{display:flex;flex-direction:column}.glv .mut{font-size:11px}
+  .glv b{font-size:18px;font-weight:900;line-height:1.1}.gco{color:#ffe27a}.gro{color:#fff}.gbo{color:#7dffb0}
+  .glg{grid-area:guar;min-width:0}.glg b{color:var(--gc);font-weight:900;font-size:14px;margin-right:6px}.glg .mut{font-size:11px}
+  @media (min-width:700px){ .gli{grid-template-columns:72px minmax(0,1.3fr) minmax(0,1.6fr) minmax(0,1.3fr);grid-template-areas:"img name vals guar"}.gli img{width:72px;height:72px} }
   /* 2026-11-09: 画像が無いとき(ローカルも公式も無い)。シルエットは中間の灰色、レア度の色は光だけ。「画像なし / No image」を必ず出す */
   .v .noimg{width:100%;aspect-ratio:2/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:8px;background:repeating-linear-gradient(135deg,#ffffff08 0 8px,#0000 8px 16px)}
   .v .noimg .sil{height:56%;width:auto;max-width:86%;color:#b9bfcc;filter:drop-shadow(0 0 5px var(--rc))}
@@ -239,7 +248,25 @@ async function route(){
 }
 
 /* ===================== home ===================== */
+// 2026-11-09: ギフト表(画像つき)。cfg.gifts(giftId・日本語名・英語名・コイン・連数・確定)。表に無いギフトはガチャにならない
+const GIFT_IMG = id => STATIC ? `img/gifts/${encodeURIComponent(id)}_256.webp` : `/www/gift_img/${encodeURIComponent(id)}_256.webp`;
+function giftCardsSite(){
+  const fmt = v => Number(v).toLocaleString(), leg = (CFG.legendary||[])[0], ja = LANG==='ja';
+  const ord = k => (CFG.rarities||[]).findIndex(r=>r.key===k);
+  const gt = gu => { const es = Object.entries(gu||{}).sort((a,b)=>ord(b[0])-ord(a[0])); if (!es.length) return {t:'—', s:'', c:''};
+    const jt = es.map(([k,v])=>(k===leg?(RB[k]?.label||k):k)+v).join('＋')+'確定', et = es.map(([k,v])=>(k===leg?(RB[k]?.label_en||k):k)+' '+v).join(' + ')+' guaranteed';
+    return {t: ja?jt:et, s: ja?et:jt, c: RC(es[0][0])}; };
+  return `<div class="gl">` + (CFG.gifts||[]).map(x=>{ const b=(x.rolls||0)-(x.coins||0), g=gt(x.guarantee);
+    return `<div class="gli" style="--gc:${g.c||'#9fd8ff'}"><img src="${GIFT_IMG(x.gift_id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="gln"><b>${esc(ja?x.ja:x.en)}</b>${x.en!==x.ja?`<span class="mut">${esc(ja?x.en:x.ja)}</span>`:''}</div>
+      <div class="glv"><div><span class="mut">${ja?'コイン':'Coins'}</span><b class="gco">${fmt(x.coins)}</b></div>
+        <div><span class="mut">${ja?'連数':'Rolls'}</span><b class="gro">${fmt(x.rolls)}</b></div>
+        <div><span class="mut">${ja?'おまけ':'Bonus'}</span><b class="gbo">${b>0?'+'+fmt(b):'—'}</b></div></div>
+      <div class="glg"><b>${esc(g.t)}</b>${g.s?`<span class="mut">${esc(g.s)}</span>`:''}</div></div>`; }).join('') +
+    `</div><div class="mut" style="margin-top:6px">${ja?'この表のギフトだけがガチャになります（ほかのギフトでは引けません）':'Only the gifts in this table roll the gacha.'}</div>`;
+}
 function giftTable(){
+  if ((CFG.gifts||[]).length) return giftCardsSite();
   const gr = CFG.gift_rolls||{}, gc = CFG.gift_coins||{}; const groups = new Map();
   for (const [name, spec] of Object.entries(gr)){ const rolls = typeof spec==='object'?spec.rolls:spec, guar = typeof spec==='object'?spec.guarantee:null; const key=JSON.stringify([rolls,guar||null]);
     if (!groups.has(key)) groups.set(key,{names:[],rolls,guar,coins:null}); const g=groups.get(key); g.names.push(name); if (gc[name]!=null) g.coins=gc[name]; }
