@@ -32,7 +32,12 @@
   .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative;cursor:pointer;transition:transform .12s}
   .v:hover{transform:translateY(-2px)}
   .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
-  .v .ret{position:absolute;left:50%;transform:translateX(-50%);top:6px;font-size:10px;font-weight:800;color:#c8ccd6;background:#0009;border:1px solid #fff3;border-radius:6px;padding:0 6px;white-space:nowrap}
+  /* 2026-11-09: カードの上の状態の帯(カードの外・重ならない)。行の中でカードの高さをそろえる */
+  .vw{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .vw>.v{flex:1}
+  .vst{font-size:10.5px;font-weight:800;line-height:1;padding:3px 6px;border-radius:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
+  .vst.in{color:#7ff3d2;background:rgba(0,255,190,.08);border:1px solid rgba(0,255,190,.28)}
+  .vst.out{color:#e3a5a5;background:rgba(255,90,90,.08);border:1px solid rgba(255,120,120,.3)}
   /* 2026-11-09: ギフト表(画像つき) */
   .gl{display:flex;flex-direction:column;gap:8px}
   .gli{display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-areas:"img name" "img vals" "img guar";column-gap:12px;row-gap:4px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border-left:4px solid var(--gc)}
@@ -45,8 +50,8 @@
   /* 2026-11-09: 画像が無いとき(ローカルも公式も無い)。シルエットは中間の灰色、レア度の色は光だけ。「画像なし / No image」を必ず出す */
   .v .noimg{width:100%;aspect-ratio:2/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:8px;background:repeating-linear-gradient(135deg,#ffffff08 0 8px,#0000 8px 16px)}
   .v .noimg .sil{height:56%;width:auto;max-width:86%;color:#b9bfcc;filter:drop-shadow(0 0 5px var(--rc))}
-  .v .noimg .nil{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#c8ccd6;line-height:1}
-  .v .noimg .nf{height:11px;width:auto;border-radius:2px}
+  .v .noimg .nil{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#c8ccd6;line-height:1;white-space:nowrap;max-width:100%}
+  @media(max-width:420px){ .v .noimg .nil{font-size:9.5px} }
   .v .n{font-size:13px;font-weight:700;line-height:1.2;min-height:2.4em}
   .v .s{font-size:11px;color:var(--mut)}
   .v.no{opacity:.28;filter:grayscale(1)}
@@ -145,8 +150,7 @@ window.siteImgErr = img => { const d = img.dataset || {};
   if (d.alt && !d.tried){ d.tried = '1'; img.src = d.alt; return; }
   const box = document.createElement('div'); box.className = 'noimg';
   const sil = (window.SIL && d.k && SIL[d.k]) || '';
-  let fl = ''; try{ fl = window.flagImg ? flagImg({country:d.c||'', operator:d.o||''}, 'nf') : ''; }catch(e){}
-  box.innerHTML = sil + `<div class="nil">${fl}<span>${NOIMG_TXT}</span></div>`;
+  box.innerHTML = sil + `<div class="nil"><span>${NOIMG_TXT}</span></div>`;   // 2026-11-09: 国旗は名前の横に出ているので箱の中には出さない
   img.replaceWith(box); };
 const gq = (sep='?') => sep + 'gacha=' + encodeURIComponent(GID);
 if (window.DEMO){ // デモ: /api/* を同梱データで応答(静的公開の下準備)
@@ -333,14 +337,19 @@ async function allGachas(q){
 }
 
 /* ===================== collection ===================== */
+const AVAIL_TXT = () => LANG==='ja' ? '配信で獲得可能' : 'Available on stream';
+const AVAIL_HELP = () => LANG==='ja' ? '配信のガチャでいま出る兵器です' : 'Can be pulled from the gacha on stream.';
+// 2026-11-09: カードの上(外)に状態の帯。今のプールにあれば「配信で獲得可能」、無ければ「限定排出終了」。プールが分かる前(ITEM_IDS が空)は帯を出さない
+const statusOf = id => !ITEM_IDS.size ? '' : (ITEM_IDS.has(id) ? 'in' : 'out');
 function vcard(v, o={}){
-  const owned = !!o.owned; const m=v.meta||{};
+  const owned = !!o.owned; const m=v.meta||{}; const stt = o.status ?? statusOf(v.id);
+  const strip = stt ? `<div class="vst ${stt}" title="${stt==='in'?AVAIL_HELP():RET_HELP()}">${stt==='in'?AVAIL_TXT():RET_TXT()}</div>` : '';
   const sub = o.who ? esc(o.who) : [gn(v.group), v.category?catN(v.category):'', m.rank?'R'+m.rank:'', m.br?'BR'+m.br:''].filter(Boolean).join(' ');
-  return `<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
-    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}${o.retired?`<div class="ret" title="${RET_HELP()}">${RET_TXT()}</div>`:''}
+  return `<div class="vw ${stt==='out'?'out':''}">${strip}<div class="v ${owned?'':'no'} ${o.fav?'fav':''} ${isRB(v.rarity)?'rb':''}" style="--rc:${RC(v.rarity)}" data-vid="${esc(v.id)}">
+    <div class="r">${esc(v.rarity)}</div>${o.count?`<div class="c">${t('dup')}${o.count}</div>`:''}
     <img loading="lazy" src="${IMG(v.id)}" data-alt="${esc(IMG_ALT(v.id))}" data-k="${esc(window.silKind?silKind(v):'')}" data-c="${esc(v.group||'')}" data-o="${esc(m.operator||'')}" onerror="siteImgErr(this)">
     <div class="n">${flagOf(v)}${esc(vname(v))}</div>
-    <div class="s">${sub}</div></div>`;
+    <div class="s">${sub}</div></div></div>`;
 }
 const favKey = uid => 'wtg_fav_'+GID+'_'+uid;
 const getFav = uid => { try{ return JSON.parse(localStorage.getItem(favKey(uid))||'[]'); }catch(e){ return []; } };
