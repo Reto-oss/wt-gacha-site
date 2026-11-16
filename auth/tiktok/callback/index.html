@@ -5,14 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<title>ログイン準備中 / Login coming soon — れーとガチャライブラリ</title>
-<!-- 2026-11-16: TikTok ログインの戻り先(Redirect URI)。今は表示だけ: スクリプトなし・外部の読み込みなし・何も保存も送信もしない。
-     あとで code と state を Cloudflare Worker に渡す処理を入れる。 -->
+<meta name="login-api" content="https://reto-gacha-login.reeto-support.workers.dev">
+<title>ログイン中 / Logging in — れーとガチャライブラリ</title>
+<!-- 2026-11-16: TikTok ログインの戻り先(Redirect URI)。外部の読み込みなし。
+     1) URL の code・state を読み、すぐにアドレスバーから消す  2) state を sessionStorage の値と比べる(違えば止める)
+     3) code を Cloudflare Worker(meta login-api)に送る(トークンの交換は Worker だけ。トークンはどこにも保存しない)
+     4) 戻ってきた 24 時間のセッションと表示用のプロフィールを localStorage に入れて /login/ へ。
+     前の版(「ログイン準備中」だけ)は _bak/site_pages_auth_tiktok_callback.html.bak_20261116_login -->
 <style>
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#07070c;color:#f2f2f6;font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;text-align:center}
-  .box{background:#111118;border:1px solid #262633;border-radius:16px;padding:28px 32px;margin:16px;max-width:460px}
-  h1{font-size:22px;margin:0 0 6px}
+  .box{background:#111118;border:1px solid #262633;border-radius:16px;padding:28px 32px;margin:16px;max-width:480px}
+  h1{font-size:20px;margin:0 0 8px}
   p{margin:6px 0;color:#9a9ab0;font-size:15px;line-height:1.7}
+  .err{color:#ff9a9a}
   a{color:#00ffff}
   .links{margin-top:18px;font-size:13px}
   .links a{color:#9a9ab0;margin:0 6px}
@@ -20,12 +25,32 @@
 </head>
 <body>
 <div class="box">
-  <h1>ログイン準備中</h1>
-  <h1 lang="en">Login coming soon</h1>
-  <p>TikTok でのログインはまだ使えません。</p>
-  <p lang="en">Login with TikTok is not available yet.</p>
-  <p><a href="../../../">れーとガチャライブラリへ / Back to Reto Gacha Library</a></p>
-  <div class="links"><a href="../../../terms/">利用規約 / Terms</a>·<a href="../../../privacy/">プライバシー / Privacy</a></div>
+  <h1 id="t">ログイン中… / Logging in…</h1>
+  <p id="m"></p>
+  <p><a href="../../../login/">ログインのページへ / Back to the login page</a></p>
+  <div class="links"><a href="../../../">トップ / Home</a>·<a href="../../../terms/">利用規約 / Terms</a>·<a href="../../../privacy/">プライバシー / Privacy</a></div>
 </div>
+<script>
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const code = q.get('code'), state = q.get('state'), error = q.get('error');
+  history.replaceState(null, '', location.pathname);   // code をアドレスバー・履歴に残さない
+  const want = sessionStorage.getItem('tt_state'); sessionStorage.removeItem('tt_state');
+  const local = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  const API = (local && sessionStorage.getItem('tt_api')) || document.querySelector('meta[name="login-api"]').content;
+  const fail = (ja, en) => { document.getElementById('t').textContent = 'ログインできませんでした / Login failed';
+    const m = document.getElementById('m'); m.className = 'err'; m.textContent = ja + ' / ' + en; };
+  if (error) return fail('TikTok でキャンセルされたか、エラーになりました(' + error + ')', 'Cancelled or refused on TikTok (' + error + ')');
+  if (!code || !state) return fail('ログインの情報がありません', 'No login data in the address');
+  if (!want || want !== state) return fail('確認の値(state)が合いません。もう一度ログインしてください', 'State mismatch. Please log in again');
+  try{
+    const r = await fetch(API + '/auth/tiktok/exchange', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({code})});
+    const d = await r.json();
+    if (!d.ok) return fail('ログインの確認に失敗しました(' + (d.error || r.status) + ')', 'Could not complete login (' + (d.error || r.status) + ')');
+    localStorage.setItem('tt_login', JSON.stringify({session: d.session, exp: d.exp, profile: d.profile, username_returned: d.username_returned, match: d.match, at: Math.floor(Date.now() / 1000)}));
+    location.replace('../../../login/');
+  }catch(e){ fail('通信に失敗しました', 'Network error: ' + e.message); }
+})();
+</script>
 </body>
 </html>

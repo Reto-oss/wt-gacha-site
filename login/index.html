@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="login-api" content="https://reto-gacha-login.reeto-support.workers.dev">
+<title>TikTokでログイン / Login with TikTok — れーとガチャライブラリ</title>
+<!-- 2026-11-16: 「TikTok でログイン」(サンドボックスで確認中)。API は Cloudflare Worker(meta login-api)。外部のスクリプトは読まない。
+     セッション(24 時間、署名付き)と表示用のプロフィールはこのブラウザの localStorage だけ。コレクションはサイトの公開データ(users/<key>.json)を読むだけ。 -->
+<style>
+  :root{--bg:#07070c;--card:#111118;--line:#262633;--cyan:#00ffff;--txt:#f2f2f6;--mut:#9a9ab0;--c-C:#9fd8ff;--c-R:#00ffff;--c-SR:#ffd700;--c-UR:#ff4fd8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
+  a{color:var(--cyan)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .home{font-weight:800;text-decoration:none;color:var(--txt)}
+  main{max-width:900px;margin:0 auto;padding:16px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+  h1{font-size:22px;margin:0 0 6px} h2{font-size:17px;margin:0 0 10px}
+  .mut{color:var(--mut);font-size:13px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;border:1px solid #fff3;background:#000;color:#fff;font:inherit;font-weight:800;font-size:16px;cursor:pointer;text-decoration:none}
+  .btn:hover{border-color:var(--cyan)} .btn[disabled]{opacity:.5;cursor:wait}
+  .btn.sub{font-size:13px;padding:6px 12px;background:#0b0b12;font-weight:700}
+  .me{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .me img{width:72px;height:72px;border-radius:50%;border:2px solid var(--line);background:#222;object-fit:cover}
+  .me .n{font-size:20px;font-weight:800} .me .u{color:var(--mut)}
+  .err{color:#ff9a9a}
+  .stats{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 12px}.stats b{font-size:20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative}
+  .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
+  .v .nm{font-size:12.5px;font-weight:700;line-height:1.25;min-height:2.5em}
+  .v .r{position:absolute;top:4px;left:6px;font-size:11px;font-weight:900;color:var(--rc)}
+  .v .c{position:absolute;top:4px;right:6px;font-size:11px;background:#000a;padding:0 6px;border-radius:8px}
+  footer{max-width:900px;margin:0 auto;padding:10px 16px 30px;text-align:center;font-size:13px;color:var(--mut)}
+  footer a{color:var(--mut);margin:0 6px}
+</style>
+</head>
+<body>
+<header><a class="home" href="../">← れーとガチャライブラリ</a></header>
+<main>
+  <div class="box" id="loginBox">
+    <h1>TikTokでログイン <span class="mut" lang="en">Login with TikTok</span></h1>
+    <p class="mut">ログインすると、配信のガチャで手に入れたあなたのコレクションを表示します。投稿の閲覧や投稿・フォロー情報の取得はしません。<br>
+      <span lang="en">Log in to see the collection you got from the stream's gacha. We never read your videos, post for you or access your followers.</span></p>
+    <p><button class="btn" id="loginBtn">TikTokでログイン / Login with TikTok</button></p>
+    <p class="mut">ログインで受け取る情報と扱い: <a href="../privacy/">プライバシーポリシー / Privacy Policy</a> ・ <a href="../terms/">利用規約 / Terms</a></p>
+    <p class="err" id="loginErr"></p>
+  </div>
+  <div id="meBox" hidden>
+    <div class="box">
+      <div class="me"><img id="av" alt="" referrerpolicy="no-referrer"><div><div class="n" id="dn"></div><div class="u" id="un"></div></div>
+        <div style="margin-left:auto"><button class="btn sub" id="logoutBtn">ログアウト / Log out</button></div></div>
+      <p class="mut" id="note"></p>
+    </div>
+    <div class="box" id="colBox" hidden>
+      <h2>あなたのコレクション <span class="mut" lang="en">Your collection</span></h2>
+      <div class="stats" id="stats"></div>
+      <div class="grid" id="grid"></div>
+      <p><a id="fullLink" href="../">コレクションのページを開く / Open your collection page</a></p>
+    </div>
+  </div>
+</main>
+<footer><a href="../">トップ / Home</a>·<a href="../terms/">利用規約 / Terms</a>·<a href="../privacy/">プライバシー / Privacy</a></footer>
+<script>
+(() => {
+  const local = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  const API = (local && new URLSearchParams(location.search).get('api')) || document.querySelector('meta[name="login-api"]').content;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const RAR = ['UR', 'SR', 'R', 'C'];
+  const load = () => { try{ const s = JSON.parse(localStorage.getItem('tt_login') || 'null'); return s && s.exp > Date.now() / 1000 ? s : null; }catch(e){ return null; } };
+  const rand = () => { const b = new Uint8Array(24); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+
+  $('loginBtn').onclick = async () => {
+    $('loginBtn').disabled = true; $('loginErr').textContent = '';
+    try{
+      const state = rand();
+      sessionStorage.setItem('tt_state', state);
+      if (local) sessionStorage.setItem('tt_api', API);
+      const r = await fetch(API + '/auth/tiktok/start', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({state})});
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || r.status);
+      location.href = d.url;
+    }catch(e){ $('loginErr').textContent = 'ログインを始められませんでした / Could not start login: ' + e.message; $('loginBtn').disabled = false; }
+  };
+  $('logoutBtn').onclick = () => { localStorage.removeItem('tt_login'); location.reload(); };
+
+  async function show(s){
+    $('loginBox').hidden = true; $('meBox').hidden = false;
+    const p = s.profile || {};
+    $('dn').textContent = p.display_name || '(no name)';
+    $('un').textContent = p.username ? '@' + p.username : '';
+    if (p.avatar_url) $('av').src = p.avatar_url; else $('av').hidden = true;
+    if (!s.username_returned){
+      $('note').innerHTML = 'TikTok からユーザー名(@)が届かなかったため、記録と自動ではつなげられませんでした。<br><span lang="en">TikTok did not return your username, so we could not link you to your records automatically.</span>';
+      return;
+    }
+    if (!s.match){
+      $('note').innerHTML = `@${esc(p.username)} の記録はまだありません(配信でギフトを贈るとここに出ます)。<br><span lang="en">No records for @${esc(p.username)} yet (they appear after you send a gift during a stream).</span>`;
+      return;
+    }
+    $('note').textContent = '';
+    const [u, it] = await Promise.all([fetch('../users/' + encodeURIComponent(s.match.key) + '.json').then(r => r.ok ? r.json() : null), fetch('../items/wt.json').then(r => r.json())]);
+    const g = u && u.gachas && u.gachas.wt;
+    if (!g){ $('note').textContent = '記録を読み込めませんでした / Could not load your records.'; return; }
+    const by = {}; for (const v of (it.items || it)) by[v.id] = v;
+    const owned = Object.entries(g.owned || {}).map(([id, o]) => ({id, n: o.n, v: by[id] || {id, name: id, rarity: 'C'}}))
+      .sort((a, b) => RAR.indexOf(a.v.rarity) - RAR.indexOf(b.v.rarity) || b.n - a.n);
+    const st = g.stats || {};
+    const cnt = r => owned.filter(x => x.v.rarity === r).length;
+    $('stats').innerHTML = `<div><span class="mut">種類 / Kinds</span><br><b>${owned.length}</b></div><div><span class="mut">回数 / Pulls</span><br><b>${st.pulls ?? owned.reduce((a, x) => a + x.n, 0)}</b></div>`
+      + RAR.map(r => `<div><span class="mut">${r}</span><br><b style="color:var(--c-${r})">${cnt(r)}</b></div>`).join('');
+    $('grid').innerHTML = owned.slice(0, 120).map(x => `<div class="v" style="--rc:var(--c-${esc(x.v.rarity)})"><div class="r">${esc(x.v.rarity)}</div>${x.n > 1 ? `<div class="c">×${x.n}</div>` : ''}
+      <img loading="lazy" src="../img/wt/${encodeURIComponent(x.id)}.webp" alt="" onerror="this.style.visibility='hidden'"><div class="nm">${esc(x.v.name || x.v.name_en || x.id)}</div></div>`).join('');
+    if (owned.length > 120) $('grid').insertAdjacentHTML('afterend', `<p class="mut">レア度の高い順に 120 種類まで表示しています(全 ${owned.length} 種類)。 <span lang="en">Showing 120 of ${owned.length} kinds, rarest first.</span></p>`);
+    $('fullLink').href = '../#/g/wt/u/' + encodeURIComponent(s.match.key);
+    $('colBox').hidden = false;
+  }
+  const s = load();
+  if (s) show(s); else localStorage.removeItem('tt_login');
+  const err = sessionStorage.getItem('tt_error'); if (err){ sessionStorage.removeItem('tt_error'); $('loginErr').textContent = err; }
+})();
+</script>
+</body>
+</html>

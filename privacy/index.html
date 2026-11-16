@@ -50,18 +50,25 @@
 </ul>
 <p>このうち<strong>サイトで公開するのは</strong>、ユーザー ID（数字）、ユーザー名（@）、入手したアイテム・回数・入手日時・最後に記録された日時だけです。表示名、ギフトのコイン数、受け取った元のデータはサイトに公開しません。プロフィール画像は現在受け取っていません。</p>
 
-<h3>(2) 「TikTokでログイン」を使ったとき（準備中）</h3>
+<h3>(2) 「TikTokでログイン」を使ったとき（試験中）</h3>
 <p>TikTok のログインキット（Login Kit）を使い、ご本人の許可を得て TikTok から次の情報を受け取ります。</p>
 <ul>
   <li>open_id（このアプリ用の TikTok アカウントの識別子）、表示名、プロフィール画像、ユーザー名</li>
 </ul>
-<p>これらは、ログインした方をご本人の記録と結びつけるためだけに使います。投稿の閲覧・投稿の作成・フォロー関係の取得などは行いません。ログインのしくみ（Cloudflare）の詳細が決まった時点で、このポリシーを更新します。</p>
+<p>これらは、ログインした方をご本人の記録と結びつけるためだけに使います。投稿の閲覧・投稿の作成・フォロー関係の取得などは行いません。</p>
+<ul>
+  <li>TikTok から受け取ったアクセストークン・リフレッシュトークンは、上の情報を受け取るために 1 回だけ使い、どこにも保存しません。</li>
+  <li>運営者のサーバー（Cloudflare）に保存するのは、open_id、照合できたサイトの記録（@ユーザー名・数字のユーザー ID）、初めてと最後にログインした日時、ログインの回数だけです。表示名とプロフィール画像はサーバーに保存しません。</li>
+  <li>ログインの状態（24 時間有効な署名付きの値）と、画面に表示するための表示名・プロフィール画像の URL・ユーザー名は、お使いのブラウザ（localStorage）にだけ保存します。ログアウトすると消えます。</li>
+  <li>プロフィール画像は TikTok のサーバーから読み込みます。</li>
+  <li>ユーザー名がサイトの記録の @ユーザー名 と一致したときだけ、その記録と結びつけます。</li>
+</ul>
 
 <h3>(3) ブラウザに保存する情報</h3>
-<p>サイトは、表示言語・初回の案内を見たかどうか・お気に入りを、お使いのブラウザ（localStorage）に保存します。これはお使いの端末の中だけにあり、運営者には送られません。</p>
+<p>サイトは、表示言語・初回の案内を見たかどうか・お気に入り、ログインしたときはログインの状態（上の (2)）を、お使いのブラウザ（localStorage）に保存します。ログインの状態以外は運営者に送られません（ログインの状態は、ログインの確認のときにだけ運営者のサーバーに送られます）。</p>
 
 <h3>(4) サイトの閲覧に伴う情報</h3>
-<p>サイトは GitHub Pages（GitHub, Inc.）で公開しています。閲覧時に、GitHub が IP アドレスなどのアクセス記録を取得することがあります。また、サイトは文字の表示に Google Fonts を、一部の兵器の画像に War Thunder の公式サイトの画像を読み込むため、これらの提供元にも IP アドレスなどが送られることがあります。運営者は、広告、アクセス解析、追跡用の Cookie を使っていません。</p>
+<p>サイトは GitHub Pages（GitHub, Inc.）で公開しています。閲覧時に、GitHub が IP アドレスなどのアクセス記録を取得することがあります。また、サイトは文字の表示に Google Fonts を、一部の兵器の画像に War Thunder の公式サイトの画像を読み込むため、これらの提供元にも IP アドレスなどが送られることがあります。ログインの機能は Cloudflare で動いており、Cloudflare が通信の処理のために IP アドレスなどを扱うことがあります（運営者は IP アドレスを保存しません）。運営者は、広告、アクセス解析、追跡用の Cookie を使っていません。</p>
 
 <h2>3. 使う目的</h2>
 <ul>
@@ -75,14 +82,14 @@
 <ul>
   <li>記録の元データ: 運営者のパソコンと、そのバックアップ</li>
   <li>公開する記録: GitHub（GitHub Pages と、その公開リポジトリ）。公開リポジトリには、過去の版の記録も残ります。</li>
-  <li>ログイン機能（準備中）: Cloudflare のサービスを使う予定です（詳細が決まり次第、このポリシーを更新します）。</li>
+  <li>ログイン機能: Cloudflare（Workers と D1 データベース）に、上の (2) の情報だけ</li>
 </ul>
 
 <h2>5. 第三者への提供</h2>
 <p>運営者は、集めた情報を売ったり、広告やマーケティングのために第三者に渡したりしません。法令に基づく場合を除き、ご本人の同意なく第三者に提供しません。サイトの公開やログインのために GitHub、Cloudflare などのサービスを利用します。</p>
 
 <h2>6. 保存期間</h2>
-<p>ガチャの記録は、本サービスを提供している間、コレクションを表示するために保存します。ログインで受け取った情報は、記録との結びつけに必要な間だけ保存し、結びつけの解除や削除のご依頼があったとき、または本サービスを終了したときに削除します。</p>
+<p>ガチャの記録は、本サービスを提供している間、コレクションを表示するために保存します。ログインの記録（open_id と照合の結果・ログインの日時と回数）は、記録との結びつけに必要な間だけ保存し、削除のご依頼があったとき、または本サービスを終了したときに削除します。ブラウザのログインの状態は 24 時間で無効になり、ログアウトで消えます。</p>
 
 <h2>7. 訂正・削除・公開停止のご依頼</h2>
 <p>ご自身の記録の訂正・削除、またはサイトでの公開の停止を希望する場合は、TikTok のユーザー名（@）を添えて「1. 運営者」の連絡先までご連絡ください。ご本人であることを確認したうえで、原則 30 日以内に対応します。公開リポジトリの過去の版に残った記録も、可能な範囲で削除します。</p>
@@ -123,18 +130,25 @@
 </ul>
 <p>Of this, <strong>only the following is published on the site</strong>: your user ID (numeric), username (@), and the items you obtained, with counts, dates obtained and the date you were last recorded. Your display name, gift coin amounts and the original data received are not published. We do not currently receive profile pictures.</p>
 
-<h3>(2) When you use "Login with TikTok" (coming soon)</h3>
+<h3>(2) When you use "Login with TikTok" (in testing)</h3>
 <p>Using TikTok Login Kit and with your permission, we will receive the following from TikTok:</p>
 <ul>
   <li>open_id (an identifier of your TikTok account for this app), display name, profile picture (avatar) and username</li>
 </ul>
-<p>We use this only to link you, once logged in, to your own records. We do not read your videos, post on your behalf or access your followers. We will update this policy when the details of the login system (on Cloudflare) are decided.</p>
+<p>We use this only to link you, once logged in, to your own records. We do not read your videos, post on your behalf or access your followers.</p>
+<ul>
+  <li>The access token and refresh token received from TikTok are used once to get the information above and are not stored anywhere.</li>
+  <li>Our server (Cloudflare) stores only your open_id, the site record matched to you (@username and numeric user ID), the dates of your first and last login, and the number of logins. Your display name and profile picture are not stored on the server.</li>
+  <li>Your login state (a signed value valid for 24 hours) and the display name, profile picture URL and username shown on screen are stored only in your browser (localStorage). Logging out removes them.</li>
+  <li>Your profile picture is loaded from TikTok's servers.</li>
+  <li>We link you to a site record only when your username matches the record's @username.</li>
+</ul>
 
 <h3>(3) Information stored in your browser</h3>
-<p>The site stores your display language, whether you have seen the welcome guide, and your favourites in your browser (localStorage). This stays on your device and is not sent to the Operator.</p>
+<p>The site stores your display language, whether you have seen the welcome guide, your favourites and, if you log in, your login state ((2) above) in your browser (localStorage). Except for the login state, none of this is sent to the Operator (the login state is sent to our server only to check your login).</p>
 
 <h3>(4) Information from visiting the site</h3>
-<p>The site is hosted on GitHub Pages (GitHub, Inc.), which may log access information such as IP addresses. The site also loads fonts from Google Fonts and some vehicle images from the official War Thunder website, so those providers may also receive your IP address. The Operator does not use advertising, analytics or tracking cookies.</p>
+<p>The site is hosted on GitHub Pages (GitHub, Inc.), which may log access information such as IP addresses. The site also loads fonts from Google Fonts and some vehicle images from the official War Thunder website, so those providers may also receive your IP address. The login feature runs on Cloudflare, which may process IP addresses to handle requests (the Operator does not store IP addresses). The Operator does not use advertising, analytics or tracking cookies.</p>
 
 <h2>3. How we use it</h2>
 <ul>
@@ -148,14 +162,14 @@
 <ul>
   <li>Original records: on the Operator's computer and its backups</li>
   <li>Published records: on GitHub (GitHub Pages and its public repository). The public repository also keeps earlier versions.</li>
-  <li>Login feature (coming soon): we plan to use Cloudflare services (we will update this policy when the details are decided).</li>
+  <li>Login feature: on Cloudflare (Workers and the D1 database), only the information in (2) above</li>
 </ul>
 
 <h2>5. Sharing</h2>
 <p>We do not sell your information or give it to third parties for advertising or marketing. Except where required by law, we do not share it with third parties without your consent. We use services such as GitHub and Cloudflare to host the site and the login feature.</p>
 
 <h2>6. Retention</h2>
-<p>Gacha records are kept for as long as the Service runs, to show the collection. Information received at login is kept only as long as needed to keep the link to your records, and is deleted when you unlink, when you ask us to delete it, or when the Service ends.</p>
+<p>Gacha records are kept for as long as the Service runs, to show the collection. Login records (your open_id and match, and login dates and count) are kept only as long as needed to keep the link to your records, and are deleted when you ask us to or when the Service ends. The login state in your browser expires after 24 hours and is removed when you log out.</p>
 
 <h2>7. Correction, deletion and removal from the site</h2>
 <p>To correct or delete your records, or to stop them being shown on the site, contact us at the address in "1. Operator" with your TikTok username (@). After confirming that you are the account holder, we will respond in principle within 30 days. We will also remove your records from earlier versions in the public repository as far as possible.</p>
