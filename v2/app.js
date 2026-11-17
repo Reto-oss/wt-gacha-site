@@ -35,7 +35,7 @@ const I = {
     all:'すべて', owned_only:'所持のみ', sort:'並び', s_rar:'レア度', s_new:'新しい順', s_cnt:'所持数', s_rank:'ランク', s_name:'名前', find:'名前で絞り込み',
     kinds:'種', your_id:'あなたの数字ID(固定・変わりません)', bookmark:'このURLをブックマーク', all_gachas:'全ガチャのコレクション', open:'開く',
     new_acq:'最近の入手', back_coll:'コレクションに戻る', pulled_by:'引いた人', open_detail:'詳しく見る',
-    fav_hint:'★ でショーケースのお気に入り(最大9個・この端末に保存)', lock_short:'所有者限定', feat_rule:'最近の排出(最大 100 回)から重複なしで 30 種。レア度の高い順、同じなら新しい順。SR・UR は持ち主以外にはシルエット。', swipe:'左右にスワイプで切り替え',
+    fav_hint:'★ でショーケースのお気に入り(最大9個・この端末に保存)', lock_short:'所有者限定', feat_rule:'最近の排出(最大 100 回)から重複なしで 30 種。レア度の高い順、同じなら新しい順。', feat_lock:'SR・UR は持ち主以外にはシルエット。', swipe:'左右にスワイプで切り替え',
     lock_note:'このレア度は、持っている本人だけが画像と詳しい情報を見られます。', lock_login:'ログインすると、自分が持っているものは表示されます。', relogin:'ログインし直してください', vehicle:'兵器', character:'キャラクター', no_items:'該当なし',
     first_title:'はじめての方へ', first_ok:'わかった', first_body:'このサイトは、配信でギフトを送って引いたガチャのコレクションを見るサイトです。<br>自分のページは <b>@ユーザー名</b> か <b>数字のユーザーID</b> で開けます。@名は変更できるので、長く使うなら数字IDをブックマークしてください。',
     make:'画像を生成', download:'PNGを保存', share:'共有', story:'ストーリー 9:16', square:'正方形 1:1', cap_ph:'ひとこと(任意)', l2d:'Live2D は準備中(いまは静止画)', e3d:'3D を読み込めませんでした(静止画を表示)',
@@ -50,7 +50,7 @@ const I = {
     all:'All', owned_only:'Owned only', sort:'Sort', s_rar:'Rarity', s_new:'Newest', s_cnt:'Count', s_rank:'Rank', s_name:'Name', find:'Filter by name',
     kinds:'items', your_id:'Your numeric ID (permanent)', bookmark:'Bookmark this URL', all_gachas:'Collections in all gachas', open:'Open',
     new_acq:'Recently acquired', back_coll:'Back to collection', pulled_by:'Pulled by', open_detail:'Details',
-    fav_hint:'★ marks showcase favourites (max 9, saved on this device)', lock_short:'Owner only', feat_rule:'Up to 30 distinct items from the latest pulls (max 100), rarest first, then newest. SR/UR show as silhouettes except to their owner.', swipe:'Swipe left/right to switch',
+    fav_hint:'★ marks showcase favourites (max 9, saved on this device)', lock_short:'Owner only', feat_rule:'Up to 30 distinct items from the latest pulls (max 100), rarest first, then newest.', feat_lock:'SR/UR show as silhouettes except to their owner.', swipe:'Swipe left/right to switch',
     lock_note:'Items of this rarity are visible in full only to their owner.', lock_login:'Log in to see the ones you own.', relogin:'Please log in again', vehicle:'Vehicle', character:'Character', no_items:'Nothing here',
     first_title:'Welcome', first_ok:'Got it', first_body:'This site shows your gacha collection, pulled by sending gifts on stream.<br>Open your page with your <b>@username</b> or your <b>numeric user ID</b>. Usernames can change, so bookmark the numeric-ID URL.',
     make:'Generate', download:'Save PNG', share:'Share', story:'Story 9:16', square:'Square 1:1', cap_ph:'Caption (optional)', l2d:'Live2D coming soon (still image for now)', e3d:'Could not load 3D (showing the still image)',
@@ -510,7 +510,7 @@ async function viewHome(el, S, Q, alive){
       <p class="st" style="--i:3">${esc(ja ? cfg.subtitle : (cfg.subtitle_en || cfg.subtitle))}</p>
       <div class="search st" style="--i:4"><input class="inp" id="q" placeholder="${esc(t('search_ph'))}" autocomplete="off"><button class="btn pri" id="go" type="button">${esc(t('search'))}</button></div>
       <div class="mut st" style="--i:5;margin-top:8px"><a href="#/help">${esc(t('help'))}</a></div></section>
-    ${hd('featured', 5)}<p class="rule">${esc(t('feat_rule'))}</p><div id="stg"></div>
+    ${hd('featured', 5)}<p class="rule">${esc(t('feat_rule'))}${S.prot.size ? ' ' + esc(t('feat_lock')) : ''}</p><div id="stg"></div>
     ${hd('recent')}<div class="strip" id="strip"></div>
     <div class="g2" style="margin-top:8px"><div>${hd('leader')}<div class="glass orn"><table class="tbl" id="lb"></table></div></div><div>${hd('rates')}<div class="glass orn"><div class="rates" id="rates"></div></div></div></div>
     ${hd('gifts')}<div class="glass orn" id="gifts"></div>`;
