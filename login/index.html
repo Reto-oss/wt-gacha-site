@@ -7,33 +7,48 @@
 <meta name="robots" content="noindex">
 <meta name="login-api" content="https://reto-gacha-login.reeto-support.workers.dev">
 <title>TikTokでログイン / Login with TikTok — れーとガチャライブラリ</title>
-<!-- 2026-11-16: 「TikTok でログイン」(サンドボックスで確認中)。API は Cloudflare Worker(meta login-api)。外部のスクリプトは読まない。
+<!-- 2026-11-16 v2 の見た目(site_export.py が site_design = "v2" のときだけ /login/ に書き出す。元は login.html、動きは同じ。https://reto-gacha-login.reeto-support.workers.dev は login.html の meta login-api の値に置き換わる)。
+     「TikTok でログイン」(サンドボックスで確認中)。API は Cloudflare Worker(meta login-api)。外部のスクリプトは読まない。
      セッション(24 時間、署名付き)と表示用のプロフィールはこのブラウザの localStorage だけ。コレクションはサイトの公開データ(users/<key>.json)を読むだけ。 -->
+<!-- 見出しの明朝(Shippori Mincho B1)は決まった文字だけ(text=)。兵器名など変わる文字は端末の明朝(游明朝・ヒラギノ明朝・Noto Serif CJK) -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap&text=DILTghiknotw%E3%81%82%E3%81%98%E3%81%9F%E3%81%A6%E3%81%A7%E3%81%A8%E3%81%AA%E3%81%AE%E3%81%AF%E3%81%B8%E3%81%B9%E3%82%81%E3%82%8C%E3%82%A4%E3%82%AC%E3%82%AD%E3%82%AE%E3%82%AF%E3%82%B0%E3%82%B1%E3%82%B3%E3%82%B7%E3%82%B9%E3%82%BF%E3%83%81%E3%83%88%E3%83%95%E3%83%96%E3%83%9B%E3%83%A0%E3%83%A3%E3%83%A7%E3%83%A9%E3%83%AA%E3%83%AC%E3%83%AD%E3%83%B3%E3%83%BC%E5%85%A5%E5%85%A8%E5%87%BA%E5%9B%B3%E5%BA%A7%E6%89%8B%E6%8E%92%E6%95%B0%E6%96%B9%E6%98%9F%E6%9C%80%E6%B3%A8%E7%8E%87%E7%9B%AE%E8%AA%BF%E8%BF%91%E9%80%A3%E9%91%91" rel="stylesheet">
 <style>
-  :root{--bg:#07070c;--card:#111118;--line:#262633;--cyan:#00ffff;--txt:#f2f2f6;--mut:#9a9ab0;--c-C:#9fd8ff;--c-R:#00ffff;--c-SR:#ffd700;--c-UR:#ff4fd8}
+  :root{--bg:#0a0a1f;--card:linear-gradient(160deg,rgba(40,34,96,.62),rgba(12,12,38,.66));--line:rgba(230,194,122,.30);--line2:rgba(230,194,122,.14);--gold:#e6c27a;--goldL:#fff1c9;--txt:#eef0fa;--mut:#a9add0;
+    --c-C:#f3efe6;--c-R:#c9d2de;--c-SR:#e9c46a;--c-UR:#eef2f8;--holo:linear-gradient(115deg,#ffd1f2,#d9c9ff,#bfefff,#cfffe6,#fff1bf,#ffd1f2);
+    --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP",serif;--serif2:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif CJK JP",serif;--cin:"Cinzel",serif}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
-  a{color:var(--cyan)}
-  header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  header .home{font-weight:800;text-decoration:none;color:var(--txt)}
-  main{max-width:900px;margin:0 auto;padding:16px}
-  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
-  h1{font-size:22px;margin:0 0 6px} h2{font-size:17px;margin:0 0 10px}
+  body{margin:0;min-height:100vh;color:var(--txt);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6;
+    background:radial-gradient(1px 1px at 12% 18%,#fff8 50%,transparent 51%),radial-gradient(1px 1px at 72% 12%,#fff6 50%,transparent 51%),radial-gradient(1.5px 1.5px at 42% 62%,#ffe3a3aa 50%,transparent 51%),
+      radial-gradient(1px 1px at 88% 48%,#fff7 50%,transparent 51%),radial-gradient(1px 1px at 22% 82%,#fff5 50%,transparent 51%),radial-gradient(1.2px 1.2px at 58% 30%,#fff8 50%,transparent 51%),
+      radial-gradient(40% 35% at 22% 28%,rgba(122,92,255,.30),transparent 70%),radial-gradient(38% 30% at 78% 18%,rgba(61,108,242,.24),transparent 70%),radial-gradient(45% 40% at 70% 82%,rgba(160,70,200,.18),transparent 70%),
+      linear-gradient(180deg,#0b0b26,#090918 55%,#0c0a22) fixed;background-color:var(--bg)}
+  a{color:var(--gold)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+  header .home{font-family:var(--serif);font-weight:700;text-decoration:none;color:var(--txt);letter-spacing:.06em}
+  main{max-width:900px;margin:0 auto;padding:18px 16px}
+  .box{position:relative;background:var(--card);border:1px solid var(--line);border-radius:3px;padding:20px 22px;margin-bottom:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .box::after{content:"";position:absolute;inset:-1px;pointer-events:none;--c:var(--gold);
+    background:linear-gradient(var(--c),var(--c)) top left/16px 1px no-repeat,linear-gradient(var(--c),var(--c)) top left/1px 16px no-repeat,linear-gradient(var(--c),var(--c)) top right/16px 1px no-repeat,linear-gradient(var(--c),var(--c)) top right/1px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) bottom left/16px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom left/1px 16px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/16px 1px no-repeat,linear-gradient(var(--c),var(--c)) bottom right/1px 16px no-repeat}
+  h1{font-family:var(--serif);font-weight:700;font-size:24px;margin:0 0 6px;letter-spacing:.08em} h2{font-family:var(--serif);font-size:18px;margin:0 0 10px;letter-spacing:.08em}
+  h1 .mut,h2 .mut{font-family:var(--cin);letter-spacing:.2em;color:var(--gold);font-size:12px}
   .mut{color:var(--mut);font-size:13px}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;border:1px solid #fff3;background:#000;color:#fff;font:inherit;font-weight:800;font-size:16px;cursor:pointer;text-decoration:none}
-  .btn:hover{border-color:var(--cyan)} .btn[disabled]{opacity:.5;cursor:wait}
-  .btn.sub{font-size:13px;padding:6px 12px;background:#0b0b12;font-weight:700}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:2px;border:1px solid #f3d896;background:linear-gradient(180deg,#f3d896,#c79a4c);color:#1a1230;font:inherit;font-family:var(--serif);font-weight:700;font-size:16px;letter-spacing:.06em;cursor:pointer;text-decoration:none}
+  .btn:hover{box-shadow:0 0 16px rgba(230,194,122,.45)} .btn[disabled]{opacity:.5;cursor:wait}
+  .btn.sub{font-size:13px;padding:6px 12px;background:rgba(20,16,44,.6);color:var(--goldL);border-color:#b48a45;font-weight:700}
   .me{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-  .me img{width:72px;height:72px;border-radius:50%;border:2px solid var(--line);background:#222;object-fit:cover}
-  .me .n{font-size:20px;font-weight:800} .me .u{color:var(--mut)}
+  .me img{width:76px;height:76px;border-radius:50%;border:2px solid var(--gold);box-shadow:0 0 18px rgba(230,194,122,.4);background:#222;object-fit:cover}
+  .me .n{font-family:var(--serif2);font-size:22px;font-weight:700} .me .u{color:var(--gold)}
   .err{color:#ff9a9a}
-  .stats{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 12px}.stats b{font-size:20px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin:6px 0 12px}.stats b{font-family:var(--cin);font-size:22px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .v{background:#0b0b12;border:2px solid var(--rc,#333);border-radius:12px;padding:6px;text-align:center;position:relative}
+  .v{background:linear-gradient(170deg,rgba(38,34,90,.72),rgba(12,12,34,.85));border:1px solid var(--rc,#333);border-radius:3px;padding:6px;text-align:center;position:relative}
   .v img{width:100%;aspect-ratio:2/1;object-fit:contain}
   .v .nm{font-size:12.5px;font-weight:700;line-height:1.25;min-height:2.5em}
-  .v .r{position:absolute;top:4px;left:6px;font-size:11px;font-weight:900;color:var(--rc)}
-  .v .c{position:absolute;top:4px;right:6px;font-size:11px;background:#000a;padding:0 6px;border-radius:8px}
+  .v .r{position:absolute;top:4px;left:6px;font-family:var(--cin);font-size:11px;font-weight:700;color:var(--rc)}
+  .v .c{position:absolute;top:4px;right:6px;font-size:11px;background:#000a;padding:0 6px;border-radius:2px}
+  .v[style*="--c-UR"]{border-color:transparent;background:linear-gradient(170deg,rgba(38,34,90,.92),rgba(12,12,34,.95)) padding-box,var(--holo) border-box}
   footer{max-width:900px;margin:0 auto;padding:10px 16px 30px;text-align:center;font-size:13px;color:var(--mut)}
   footer a{color:var(--mut);margin:0 6px}
 </style>
@@ -103,7 +118,10 @@
       return;
     }
     $('note').textContent = '';
-    const [u, it] = await Promise.all([fetch('../users/' + encodeURIComponent(s.match.key) + '.json').then(r => r.ok ? r.json() : null), fetch('../items/wt.json').then(r => r.json())]);
+    const [u, it, gj] = await Promise.all([fetch('../users/' + encodeURIComponent(s.match.key) + '.json').then(r => r.ok ? r.json() : null), fetch('../items/wt.json').then(r => r.json()),
+      fetch('../gachas.json').then(r => r.ok ? r.json() : {}).catch(() => ({}))]);
+    // 2026-11-17 r2: 高いレア度(gachas.json の site_protect)は公開の画像が無い。本人のこのページでは Worker から本物を受け取る(セッション付き)
+    const PROT = new Set((((gj || {}).configs || {}).wt || {}).site_protect || []);
     const g = u && u.gachas && u.gachas.wt;
     if (!g){ $('note').textContent = '記録を読み込めませんでした / Could not load your records.'; return; }
     const by = {}; for (const v of (it.items || it)) by[v.id] = v;
@@ -114,7 +132,9 @@
     $('stats').innerHTML = `<div><span class="mut">種類 / Kinds</span><br><b>${owned.length}</b></div><div><span class="mut">回数 / Pulls</span><br><b>${st.pulls ?? owned.reduce((a, x) => a + x.n, 0)}</b></div>`
       + RAR.map(r => `<div><span class="mut">${r}</span><br><b style="color:var(--c-${r})">${cnt(r)}</b></div>`).join('');
     $('grid').innerHTML = owned.slice(0, 120).map(x => `<div class="v" style="--rc:var(--c-${esc(x.v.rarity)})"><div class="r">${esc(x.v.rarity)}</div>${x.n > 1 ? `<div class="c">×${x.n}</div>` : ''}
-      <img loading="lazy" src="../img/wt/${encodeURIComponent(x.id)}.webp" alt="" onerror="this.style.visibility='hidden'"><div class="nm">${esc(x.v.name || x.v.name_en || x.id)}</div></div>`).join('');
+      <img loading="lazy" src="../img/wt/${PROT.has(x.v.rarity) ? 'sil/' : ''}${encodeURIComponent(x.id)}.webp" ${PROT.has(x.v.rarity) ? `data-pa="${esc(x.id)}"` : ''} alt="" onerror="this.style.visibility='hidden'"><div class="nm">${esc(x.v.name || x.v.name_en || x.id)}</div></div>`).join('');
+    document.querySelectorAll('#grid img[data-pa]').forEach(im => { const id = im.dataset.pa; im.removeAttribute('data-pa');
+      fetch(API + '/asset/wt/' + encodeURIComponent(id) + '/img', {headers: {Authorization: 'Bearer ' + s.session}}).then(r => r.ok ? r.blob() : null).then(b => { if (b) im.src = URL.createObjectURL(b); }).catch(() => {}); });
     if (owned.length > 120) $('grid').insertAdjacentHTML('afterend', `<p class="mut">レア度の高い順に 120 種類まで表示しています(全 ${owned.length} 種類)。 <span lang="en">Showing 120 of ${owned.length} kinds, rarest first.</span></p>`);
     $('fullLink').href = '../#/g/wt/u/' + encodeURIComponent(s.match.key);
     $('colBox').hidden = false;

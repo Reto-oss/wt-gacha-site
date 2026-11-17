@@ -33,7 +33,7 @@
 
 <section id="ja" lang="ja">
 <h1>プライバシーポリシー</h1>
-<p class="mut">れーとガチャライブラリ ／ 制定日: 2026年11月16日</p>
+<p class="mut">れーとガチャライブラリ ／ 制定日: 2026年11月16日 ／ 改定日: 2026年11月17日</p>
 
 <p>れーと（以下「運営者」）は、「れーとガチャライブラリ」（このウェブサイトと、今後提供する「TikTokでログイン」の機能。以下「本サービス」）で扱う情報について、次のとおり定めます。</p>
 
@@ -58,10 +58,10 @@
 <p>これらは、ログインした方をご本人の記録と結びつけるためだけに使います。投稿の閲覧・投稿の作成・フォロー関係の取得などは行いません。</p>
 <ul>
   <li>TikTok から受け取ったアクセストークン・リフレッシュトークンは、上の情報を受け取るために 1 回だけ使い、どこにも保存しません。</li>
-  <li>運営者のサーバー（Cloudflare）に保存するのは、open_id、照合できたサイトの記録（@ユーザー名・数字のユーザー ID）、初めてと最後にログインした日時、ログインの回数だけです。表示名とプロフィール画像はサーバーに保存しません。</li>
+  <li>運営者のサーバー（Cloudflare）に保存するのは、open_id、照合できたサイトの記録（@ユーザー名・数字のユーザー ID）、初めてと最後にログインした日時、ログインの回数、記録と結びつけた日時だけです。表示名とプロフィール画像はサーバーに保存しません。</li>
   <li>ログインの状態（24 時間有効な署名付きの値）と、画面に表示するための表示名・プロフィール画像の URL・ユーザー名は、お使いのブラウザ（localStorage）にだけ保存します。ログアウトすると消えます。</li>
   <li>プロフィール画像は TikTok のサーバーから読み込みます。</li>
-  <li>ユーザー名がサイトの記録の @ユーザー名 と一致したときだけ、その記録と結びつけます。</li>
+  <li>初めてログインしたとき、ユーザー名がサイトの記録の @ユーザー名 と一致した場合だけ、その記録（数字のユーザー ID）と結びつけます。結びつけた後は、ユーザー名を変えても結びつけは変わらず、同じ記録にほかのアカウントを結びつけることもありません。</li>
 </ul>
 
 <h3>(3) ブラウザに保存する情報</h3>
@@ -112,7 +112,7 @@
 
 <section id="en" lang="en">
 <h1>Privacy Policy</h1>
-<p class="mut">Reto Gacha Library / Effective: November 16, 2026</p>
+<p class="mut">Reto Gacha Library / Effective: November 16, 2026 / Revised: November 17, 2026</p>
 <p class="mut">If the Japanese and English versions differ, the Japanese version prevails.</p>
 
 <p>This policy explains how れーと (Reto, the "Operator") handles information in "Reto Gacha Library" (this website and the upcoming "Login with TikTok" feature, together the "Service").</p>
@@ -138,10 +138,10 @@
 <p>We use this only to link you, once logged in, to your own records. We do not read your videos, post on your behalf or access your followers.</p>
 <ul>
   <li>The access token and refresh token received from TikTok are used once to get the information above and are not stored anywhere.</li>
-  <li>Our server (Cloudflare) stores only your open_id, the site record matched to you (@username and numeric user ID), the dates of your first and last login, and the number of logins. Your display name and profile picture are not stored on the server.</li>
+  <li>Our server (Cloudflare) stores only your open_id, the site record matched to you (@username and numeric user ID), the dates of your first and last login, the number of logins, and when you were linked to your record. Your display name and profile picture are not stored on the server.</li>
   <li>Your login state (a signed value valid for 24 hours) and the display name, profile picture URL and username shown on screen are stored only in your browser (localStorage). Logging out removes them.</li>
   <li>Your profile picture is loaded from TikTok's servers.</li>
-  <li>We link you to a site record only when your username matches the record's @username.</li>
+  <li>At your first login, we link you to a site record (its numeric user ID) only when your username matches the record's @username. After that, the link stays the same even if you change your username, and no other account can be linked to the same record.</li>
 </ul>
 
 <h3>(3) Information stored in your browser</h3>
